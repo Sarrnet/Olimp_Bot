@@ -1,0 +1,392 @@
+{
+  "onboarding_id": "height_growth_onboarding_v1",
+  "language": "en",
+  "intro_message": {
+    "type": "text",
+    "content": "Hi! This bot will help you estimate your chances of reaching your potential genetic growth, analyze exactly what's holding you back, and suggest how to fix it. We'll also select a personalized exercise course based on your features. To start, let's answer a few questions."
+  },
+  "steps": [
+    {
+      "id": "age",
+      "type": "input",
+      "input_type": "number",
+      "question": "How old are you?"
+    },
+    {
+      "id": "gender",
+      "type": "choice",
+      "question": "Your gender:",
+      "options": [
+        "Male",
+        "Female"
+      ]
+    },
+    {
+      "id": "current_height_cm",
+      "type": "input",
+      "input_type": "number",
+      "question": "What is your current height? Enter a number in centimeters (e.g., 178)."
+    },
+    {
+      "id": "peak_growth_period",
+      "type": "choice",
+      "question": "During which period did you grow the fastest?",
+      "options": [
+        "Elementary school",
+        "Ages 12–14",
+        "Ages 15–17",
+        "No noticeable spurt yet",
+        "Hard to say"
+      ]
+    },
+    {
+      "id": "growth_pauses",
+      "type": "choice",
+      "question": "Have there been periods when you almost didn't grow (several months or longer)?",
+      "options": [
+        "Yes, there were long periods without growth",
+        "Yes, I sometimes noticed such periods",
+        "No, growth was more or less stable",
+        "I didn't pay attention"
+      ]
+    },
+    {
+      "id": "childhood_height_relative",
+      "type": "choice",
+      "question": "How tall were you in childhood compared to your peers?",
+      "options": [
+        "I was shorter than most",
+        "I was about the same as everyone",
+        "I was taller than most",
+        "My height changed a lot",
+        "I don't remember"
+      ]
+    },
+    {
+      "id": "dream_height_cm",
+      "type": "input",
+      "input_type": "number",
+      "question": "What height would you like to reach?"
+    },
+    {
+      "id": "self_assessed_potential",
+      "type": "choice",
+      "question": "Do you think you've already realized all your growth potential?",
+      "options": [
+        "No, I feel I could be taller",
+        "Possibly not completely",
+        "Most likely yes",
+        "I never thought about it"
+      ]
+    },
+    {
+      "id": "weight_kg",
+      "type": "input",
+      "input_type": "number",
+      "question": "How much do you currently weigh? (in kg)"
+    },
+    {
+      "id": "body_proportions",
+      "type": "choice",
+      "question": "Have you noticed that your arms or legs look disproportionate to your body?",
+      "options": [
+        "Yes, limbs seem longer than the body",
+        "Yes, they seem shorter",
+        "Everything looks proportionate",
+        "Never paid attention"
+      ]
+    },
+    {
+      "id": "shoe_size",
+      "type": "input",
+      "input_type": "number",
+      "question": "Your shoe size:"
+    },
+    {
+      "id": "growth_pain",
+      "type": "choice",
+      "question": "How often do you have leg pain or a 'stretching growth' sensation?",
+      "options": [
+        "Often",
+        "Sometimes",
+        "Very rarely",
+        "Never"
+      ]
+    },
+    {
+      "id": "social_context",
+      "type": "choice",
+      "question": "In what situations is your height felt most strongly?",
+      "options": [
+        "In relationships / dating",
+        "In the company of other people / peers",
+        "At work / school",
+        "Almost never"
+      ]
+    },
+    {
+      "id": "height_insecurity",
+      "type": "choice",
+      "question": "Do you feel that your height limits you in life?",
+      "options": [
+        "Yes, quite strongly",
+        "Sometimes yes",
+        "Almost no effect",
+        "No, no effect at all"
+      ]
+    },
+    {
+      "id": "sleep_hours",
+      "type": "choice",
+      "question": "Up to 30% of your growth is determined by daily habits. Now let's identify which habits you have and what's worth working on. How many hours a day do you usually sleep?",
+      "options": [
+        "4–6 hours",
+        "7–8 hours",
+        "9–12 hours"
+      ]
+    },
+    {
+      "id": "sleep_time",
+      "type": "choice",
+      "question": "What time do you usually fall asleep?",
+      "options": [
+        "Before 22:00",
+        "22:00 – 23:00",
+        "23:00 – 00:00",
+        "After midnight",
+        "Different every day"
+      ]
+    },
+    {
+      "id": "sleep_quality",
+      "type": "choice",
+      "question": "How do you usually sleep at night?",
+      "options": [
+        "I sleep deeply without waking up",
+        "I sometimes wake up",
+        "I often wake up during the night",
+        "Sleep is unstable"
+      ]
+    },
+    {
+      "id": "sport_type",
+      "type": "choice_with_custom",
+      "question": "What kind of sport do you do?",
+      "options": [
+        "Basketball",
+        "Volleyball",
+        "Swimming",
+        "Athletics",
+        "Martial arts",
+        "Football",
+        "Bodybuilding",
+        "I don't do sports",
+        "Custom option"
+      ]
+    },
+    {
+      "id": "father_height_cm",
+      "type": "input",
+      "input_type": "number",
+      "question": "How tall is your father? (in cm)"
+    },
+    {
+      "id": "mother_height_cm",
+      "type": "input",
+      "input_type": "number",
+      "question": "How tall is your mother? (in cm)"
+    },
+    {
+      "id": "tallest_relative",
+      "type": "choice_with_custom",
+      "question": "Who among your relatives is the tallest?",
+      "options": [
+        "Father (180+ cm)",
+        "Father (below 180 cm)",
+        "Brother / cousin",
+        "Uncle",
+        "Grandfather",
+        "Don't know exactly",
+        "Custom option"
+      ]
+    },
+    {
+      "id": "older_brothers",
+      "type": "choice",
+      "question": "Do you have older brothers? If so, are they taller than you now?",
+      "options": [
+        "Yes, and significantly taller than me",
+        "Yes, slightly taller",
+        "Yes, about the same height",
+        "No, no brothers",
+        "Yes, but I am taller"
+      ]
+    },
+    {
+      "id": "paternal_tall_relatives",
+      "type": "choice_with_custom",
+      "question": "Are there any relatives on your father's side taller than your father?",
+      "options": [
+        "My brother is taller than father",
+        "My uncle is taller than father",
+        "My grandfather is taller than father",
+        "Custom option"
+      ]
+    },
+    {
+      "id": "late_growth_family",
+      "type": "choice",
+      "question": "Was there anyone in your family who grew noticeably later than others (after 17–18 years)?",
+      "options": [
+        "Yes, father / uncle grew sharply after school",
+        "Yes, brother grew later than peers",
+        "Yes, I know such a case in the family",
+        "No, I didn't notice"
+      ]
+    },
+    {
+      "id": "growth_last_year",
+      "type": "choice",
+      "question": "By how many centimeters have you grown in the last year?",
+      "options": [
+        "Less than 2 cm",
+        "2–5 cm",
+        "6–8 cm",
+        "10+ cm",
+        "I don't know"
+      ]
+    },
+    {
+      "id": "voice_change",
+      "type": "choice",
+      "question": "How did your voice change?",
+      "options": [
+        "Changed sharply",
+        "Gradually",
+        "Almost didn't change",
+        "Hasn't fully changed yet"
+      ]
+    },
+    {
+      "id": "hair_growth",
+      "type": "choice",
+      "question": "How fast does your hair grow compared to your peers?",
+      "options": [
+        "Faster",
+        "About the same",
+        "Slower",
+        "Never thought about it"
+      ]
+    },
+    {
+      "id": "comparison",
+      "type": "choice",
+      "question": "Do you often compare your height with others?",
+      "options": [
+        "Constantly",
+        "Sometimes",
+        "Rarely",
+        "Never"
+      ]
+    },
+    {
+      "id": "noticed_growth",
+      "type": "choice",
+      "question": "Have others told you that you've grown, even if you didn't notice it yourself?",
+      "options": [
+        "Yes, several times",
+        "It happened once or twice",
+        "No",
+        "Don't remember"
+      ]
+    },
+    {
+      "id": "posture_change",
+      "type": "choice",
+      "question": "How has your posture changed in the last couple of years?",
+      "options": [
+        "Became better",
+        "Became worse",
+        "Didn't change",
+        "I don't know"
+      ]
+    },
+    {
+      "id": "puberty_timing",
+      "type": "choice",
+      "question": "Do you remember when you started puberty?",
+      "options": [
+        "Earlier than most",
+        "About the same as everyone",
+        "Later than most",
+        "Not sure"
+      ]
+    },
+    {
+      "id": "acne_frequency",
+      "type": "choice",
+      "question": "Do you often have acne?",
+      "options": [
+        "Rarely",
+        "Often",
+        "Regularly"
+      ]
+    },
+    {
+      "id": "current_growth_speed",
+      "type": "choice",
+      "question": "Do you think you are growing slower than last year?",
+      "options": [
+        "I think I'm not growing",
+        "I'm growing slower",
+        "I'm growing at the same speed",
+        "I'm growing faster",
+        "I don't know"
+      ]
+    },
+    {
+      "id": "final_message",
+      "type": "cta",
+      "content": "We combine key metrics and factors to estimate your real genetic growth potential. Genetics sets the foundation, but lifestyle and habits determine the limits of the organism's growth. Let's create your personal growth enhancement program.",
+      "button_text": "Get results"
+    }
+  ],
+  "output_schema": {
+    "type": "raw_user_profile",
+    "fields": [
+      "age",
+      "gender",
+      "current_height_cm",
+      "peak_growth_period",
+      "growth_pauses",
+      "childhood_height_relative",
+      "dream_height_cm",
+      "self_assessed_potential",
+      "weight_kg",
+      "body_proportions",
+      "shoe_size",
+      "growth_pain",
+      "social_context",
+      "height_insecurity",
+      "sleep_hours",
+      "sleep_time",
+      "sleep_quality",
+      "sport_type",
+      "father_height_cm",
+      "mother_height_cm",
+      "tallest_relative",
+      "older_brothers",
+      "paternal_tall_relatives",
+      "late_growth_family",
+      "growth_last_year",
+      "voice_change",
+      "hair_growth",
+      "comparison",
+      "noticed_growth",
+      "posture_change",
+      "puberty_timing",
+      "acne_frequency",
+      "current_growth_speed"
+    ]
+  }
+}
