@@ -1,0 +1,83 @@
+generator client {
+    provider = "prisma-client-js"
+    output   = "../generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+model User {
+    id                   String    @id @default(uuid())
+    telegramId           BigInt    @unique
+    username             String?
+    firstName            String?
+    lastName             String?
+    language             String?
+    role                 String    @default("USER") // "USER" or "ADMIN"
+    createdAt            DateTime  @default(now())
+    updatedAt            DateTime  @updatedAt
+    onboardingCompleted  Boolean   @default(false)
+    onboardingData       Json?
+    analysisData         Json?
+    analysisImageFileId  String?
+    paid                 Boolean   @default(false)
+    paymentDate          DateTime?
+    subscriptionExpiry   DateTime? // New field for subscription end date
+    lastPaymentProvider  String?
+    trainingStreak       Int       @default(0)
+    programDay           Int       @default(1) // Can go up to 182 days
+    lastTrainingDate     DateTime?
+    notificationsEnabled Boolean   @default(true)
+    abGroup              String    @default("A") // "A" or "B"
+    totalExercises       Int       @default(0)
+    freezeCount          Int       @default(0)
+    maxStreak            Int       @default(0)
+    achievements         Json      @default("[]")
+
+    // Health Tracking & Progress
+    currentHeight Float? // Track growth progress weekly
+    initialBmi    Float? // BMI calculated from weight/height
+    waterLogs     Json   @default("{}") // e.g. {"2026-03-29": 1500}
+    sleepLogs     Json   @default("{}") // e.g. {"2026-03-29": 8}
+    weightLogs    Json   @default("{}") // e.g. {"2026-W12": 70}
+    growthApplied Json   @default("{}") // e.g. {"2026-03-31": {"water": true, "sleep": true, "exercise": true}}
+
+    trainingSessions TrainingSession[]
+
+    @@index([telegramId])
+}
+
+model TrainingSession {
+    id        String   @id @default(uuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    date      DateTime @default(now())
+    exercises Json
+    completed Boolean  @default(false)
+
+    @@index([userId])
+    @@index([date])
+}
+
+model AbConfig {
+    id   String @id @default(uuid())
+    name String @unique
+
+    // 1 Month Tariff
+    price    Int @default(699)
+    oldPrice Int @default(899)
+
+    // 3 Months Tariff
+    price3    Int @default(1799)
+    oldPrice3 Int @default(2697)
+
+    // 6 Months Tariff
+    price6    Int @default(2999)
+    oldPrice6 Int @default(5394)
+
+    isActive  Boolean  @default(true)
+    isDefault Boolean  @default(false)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
