@@ -1,0 +1,243 @@
+{
+    "training_program_id": "height_growth_training_v1",
+    "language": "en",
+    "exercise_pool": [
+        {
+            "id": "cobra_stretch",
+            "name": "Cobra Stretch",
+            "difficulty": "easy",
+            "duration_range_sec": [45, 120],
+            "how_to": "Lie on your stomach, palms under shoulders. Slowly straighten your arms, lifting your chest up, pelvis stays on the floor. Shoulders down, look forward, breathe calmly.",
+            "why_important": "Doing this exercise, you gently stretch the front of your body and spine, relieving accumulated compression from sitting and training. Regular performance improves spinal mobility and its ability to fully straighten.",
+            "tags": ["spine_extension", "posture", "decompression"]
+        },
+        {
+            "id": "downward_dog",
+            "name": "Downward Dog",
+            "difficulty": "easy",
+            "duration_range_sec": [45, 120],
+            "how_to": "Get on all fours, then lift the pelvis up, straightening legs and arms. The back stretches in one line, heels reach for the floor, neck is relaxed.",
+            "why_important": "The exercise stretches the spine and the back of the legs, helping to relieve axial tension. It promotes even load distribution throughout the body.",
+            "tags": ["spine", "hamstrings", "decompression"]
+        },
+        {
+            "id": "twisting_leg_throws",
+            "name": "Twisting Leg Throws",
+            "difficulty": "medium",
+            "duration_range_sec": [45, 90],
+            "how_to": "Lie on your back, slightly lift your shoulders. Pull bent legs to your chest, then straighten them forward, keeping the core tight.",
+            "why_important": "Activates deep core muscles that stabilize the spine. A strong core helps maintain the correct body axis under load.",
+            "tags": ["core", "spine_stability"]
+        },
+        {
+            "id": "seated_forward_fold",
+            "name": "Seated Forward Fold",
+            "difficulty": "easy",
+            "duration_range_sec": [45, 120],
+            "how_to": "Sit on the floor, legs hip-width apart. On exhalation, gently reach forward with your torso without rounding your back, then return back.",
+            "why_important": "Relieves tension from the lower back and posterior chain of muscles. Helps the spine recover from daily loads.",
+            "tags": ["lower_back", "recovery"]
+        },
+        {
+            "id": "elbows_back",
+            "name": "Elbows Back",
+            "difficulty": "easy",
+            "duration_range_sec": [45, 90],
+            "how_to": "Stand straight, hands on the waist, elbows out. Gently pull your elbows back, opening up the chest.",
+            "why_important": "Opens the thoracic region and improves posture. Helps the body maintain a more elongated position.",
+            "tags": ["posture", "chest_opening"]
+        },
+        {
+            "id": "lunge_stretch",
+            "name": "Lunge Stretch",
+            "difficulty": "medium",
+            "duration_range_sec": [60, 120],
+            "how_to": "From a plank position, bring one leg forward, lower the other to the knee. Smoothly push the pelvis forward, keeping the torso vertical.",
+            "why_important": "Releases hip joints that affect spinal position. A mobile pelvis helps maintain the vertical axis of the body.",
+            "tags": ["hips", "alignment"]
+        },
+        {
+            "id": "squat_jumps",
+            "name": "Squat Jumps",
+            "difficulty": "medium",
+            "duration_range_sec": [30, 75],
+            "how_to": "Squat down and perform a vertical jump, then gently return back to a squat.",
+            "why_important": "Activates metabolic processes and adaptation mechanisms of the body. Creates conditions for more active recovery.",
+            "tags": ["dynamic", "activation"]
+        },
+        {
+            "id": "calf_stretch",
+            "name": "Calf Stretch",
+            "difficulty": "easy",
+            "duration_range_sec": [45, 90],
+            "how_to": "Press your hands against a wall, step one leg back and straighten it. Feel the calf stretch, then switch sides.",
+            "why_important": "Calf muscles affect gait and overall body axis. Their relaxation helps maintain correct movement mechanics.",
+            "tags": ["calves", "posture"]
+        },
+        {
+            "id": "superman",
+            "name": "Superman",
+            "difficulty": "medium",
+            "duration_range_sec": [45, 90],
+            "how_to": "Lie on your stomach, extend arms forward. Simultaneously lift arms and legs, hold for 1–2 seconds.",
+            "why_important": "Strengthens muscles that support the spine in an elongated position. Reduces the risk of back sagging.",
+            "tags": ["back_strength", "stability"]
+        },
+        {
+            "id": "v_up",
+            "name": "V-Up",
+            "difficulty": "hard",
+            "duration_range_sec": [30, 75],
+            "how_to": "Lying on your back, simultaneously lift legs and torso, reaching for toes with your hands.",
+            "why_important": "Builds a strong core that stabilizes the spine. Important for maintaining a straight body axis.",
+            "tags": ["core"]
+        },
+        {
+            "id": "standing_forward_fold",
+            "name": "Standing Forward Fold",
+            "difficulty": "easy",
+            "duration_range_sec": [45, 90],
+            "how_to": "Stand straight and lean forward, letting the torso freely reach toward the legs.",
+            "why_important": "Relieves axial tension after the day. Helps the spine recover faster.",
+            "tags": ["recovery", "spine"]
+        },
+        {
+            "id": "supine_spinal_twist",
+            "name": "Supine Spinal Twist",
+            "difficulty": "easy",
+            "duration_range_sec": [60, 150],
+            "how_to": "Lying on your back, bend one leg and cross it over your body, extend the opposite arm to the side.",
+            "why_important": "Improves spinal mobility and nourishment of intervertebral structures.",
+            "tags": ["mobility", "spine"]
+        },
+        {
+            "id": "hanging_wipers",
+            "name": "Hanging Windshield Wipers",
+            "difficulty": "hard",
+            "duration_range_sec": [30, 90],
+            "how_to": "Hanging from a bar, lift your legs and rotate them from side to side, keeping the torso stable.",
+            "why_important": "Combines spinal decompression and core work, enhancing adaptation to an elongated position.",
+            "tags": ["decompression", "core"]
+        },
+        {
+            "id": "quad_stretch",
+            "name": "Standing Quad Stretch",
+            "difficulty": "easy",
+            "duration_range_sec": [45, 90],
+            "how_to": "Standing, bend one leg back, holding the foot with your hand, knees together, pelvis slightly forward.",
+            "why_important": "Reduces pelvic tilt and helps align the torso.",
+            "tags": ["quads", "alignment"]
+        },
+        {
+            "id": "hanging_leg_raises",
+            "name": "Hanging Leg Raises",
+            "difficulty": "hard",
+            "duration_range_sec": [30, 75],
+            "how_to": "Hanging from a bar, slowly lift bent legs to your chest and lower them back down.",
+            "why_important": "Strengthens the core and stretches the spine under body weight.",
+            "tags": ["core", "decompression"]
+        },
+        {
+            "id": "dead_hang",
+            "name": "Dead Hang",
+            "difficulty": "medium",
+            "duration_range_sec": [45, 150],
+            "how_to": "Hang from a bar, fully relaxing the body, shoulders down, breathing steadily.",
+            "why_important": "Relieves accumulated spinal compression and returns the feeling of elongation.",
+            "tags": ["decompression"]
+        },
+        {
+            "id": "warrior_pose",
+            "name": "Warrior Pose",
+            "difficulty": "medium",
+            "duration_range_sec": [60, 150],
+            "how_to": "Take a wide step forward, front leg bent, back leg straight, arms up or to the sides.",
+            "why_important": "Develops balance, strength, and elongation, forming a stable vertical position.",
+            "tags": ["balance", "posture"]
+        },
+        {
+            "id": "thread_the_needle",
+            "name": "Thread the Needle",
+            "difficulty": "easy",
+            "duration_range_sec": [60, 150],
+            "how_to": "On all fours, slide one arm under your body, lowering your shoulder to the floor.",
+            "why_important": "Relaxes the thoracic region and shoulders, improving mobility of the upper spine.",
+            "tags": ["upper_spine", "mobility"]
+        },
+        {
+            "id": "camel_pose",
+            "name": "Camel Pose",
+            "difficulty": "hard",
+            "duration_range_sec": [45, 105],
+            "how_to": "Kneel, hands on lower back or heels, gently arch backward.",
+            "why_important": "Deeply opens the anterior chain and returns a sense of space and length to the body.",
+            "tags": ["spine_extension"]
+        },
+        {
+            "id": "bridge_pose",
+            "name": "Bridge Pose",
+            "difficulty": "medium",
+            "duration_range_sec": [60, 150],
+            "how_to": "Lying on your back, bend legs, feet on the floor, lift pelvis up.",
+            "why_important": "Stabilizes the base of the spine and helps maintain torso verticality.",
+            "tags": ["glutes", "stability"]
+        }
+    ],
+    "weekly_rules": [
+        {
+            "week": 1,
+            "total_exercises_per_day_range": [3, 4],
+            "max_easy": 3,
+            "max_medium": 1,
+            "max_hard": 0,
+            "duration_multiplier_range": [1, 1.05],
+            "new_exercise_priority": "high"
+        },
+        {
+            "week": 2,
+            "total_exercises_per_day_range": [4, 5],
+            "max_easy": 3,
+            "max_medium": 2,
+            "max_hard": 0,
+            "duration_multiplier_range": [1.05, 1.1],
+            "new_exercise_priority": "high"
+        },
+        {
+            "week": 3,
+            "total_exercises_per_day_range": [4, 5],
+            "max_easy": 2,
+            "max_medium": 2,
+            "max_hard": 1,
+            "duration_multiplier_range": [1.1, 1.15],
+            "new_exercise_priority": "medium"
+        },
+        {
+            "week": 4,
+            "total_exercises_per_day_range": [5, 6],
+            "max_easy": 2,
+            "max_medium": 2,
+            "max_hard": 2,
+            "duration_multiplier_range": [1.15, 1.2],
+            "new_exercise_priority": "medium"
+        }
+    ],
+    "daily_selection_algorithm": {
+        "rules": [
+            "The number of exercises per day is chosen randomly within the total_exercises_per_day_range of the current week",
+            "The same exercise cannot be repeated two days in a row",
+            "At least one exercise with the decompression tag every day",
+            "At least one exercise with the core or posture tag every day",
+            "Exercises that haven't been shown to the user yet are selected first",
+            "After week 4, new exercises are added less frequently, the focus shifts to increasing duration"
+        ],
+        "duration_logic": {
+            "description": "Actual duration = random value from duration_range_sec multiplied by the week's duration_multiplier",
+            "hard_limit": "The final duration cannot exceed the original range of the exercise"
+        }
+    },
+    "progression_philosophy": {
+        "first_4_weeks": "Maximum dynamics, sense of rapid progress and novelty",
+        "after_4_weeks": "Depth, variability, and growth of time under load",
+        "user_perception_goal": "Every day feels personalized and different from the previous one"
+    }
+}
