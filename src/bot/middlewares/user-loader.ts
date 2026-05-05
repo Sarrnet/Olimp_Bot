@@ -66,15 +66,19 @@ export const userLoader = (): MiddlewareFn<MyContext> => {
             ctx.role = isAdminUser ? 'ADMIN' : 'USER'
             ctx.abGroup = user.abGroup || 'A'
 
-            // Setup commands for current user session
-            if (!ctx.session || !(ctx.session as any).commandsSet) {
-                await setupUserCommands(ctx.telegram, ctx.from.id, ctx.role === 'ADMIN')
-                ;(ctx.session as any).commandsSet = true
-            }
-
             // Fetch full pricing config
             ctx.abConfig = await abService.getGroupConfig(ctx.abGroup)
             ctx.price = ctx.abConfig?.price || 699
+
+            // Setup commands for current user session
+            if (!ctx.session || !(ctx.session as any).commandsSet) {
+              try {
+                await setupUserCommands(ctx.telegram, ctx.from.id, ctx.role === 'ADMIN');
+                (ctx.session as any).commandsSet = true
+              } catch (cmdError) {
+                logger.warn(`Could not set commands for user ${ctx.from.id}: ${cmdError}`)
+                }
+            }
         } catch (error) {
             logger.error('Error in userLoader middleware:', error)
             // Fallbacks to avoid crashing
