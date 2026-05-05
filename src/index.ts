@@ -64,7 +64,7 @@ const limitConfig = {
     limit: 5,
     keyGenerator: (ctx: MyContext) => ctx.from?.id.toString() || 'unknown',
     onLimitExceeded: (ctx: MyContext) => {
-      logger.warn(`Rate limit exceeded for user ${ctx.from?.id || 'unknown'}`)и
+      logger.warn(`Rate limit exceeded for user ${ctx.from?.id || 'unknown'}`)
     },
 }
 
