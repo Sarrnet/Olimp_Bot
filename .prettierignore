@@ -1,6 +1,0 @@
-node_modules/
-dist/
-generated/
-prisma/migrations/
-.env
-package-lock.json
