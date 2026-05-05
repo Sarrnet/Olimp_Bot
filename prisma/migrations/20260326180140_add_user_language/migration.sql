@@ -1,6 +1,0 @@
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "achievements" JSONB NOT NULL DEFAULT '[]',
-ADD COLUMN     "freezeCount" INTEGER NOT NULL DEFAULT 0,
-ADD COLUMN     "language" TEXT,
-ADD COLUMN     "maxStreak" INTEGER NOT NULL DEFAULT 0,
-ADD COLUMN     "totalExercises" INTEGER NOT NULL DEFAULT 0;
