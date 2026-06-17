@@ -42,12 +42,40 @@ export function formatAnalysisForUser(
     const messages: string[] = []
     const emojis = ['🧬', '🎲', '⛓️', '🎯', '🛡️', '📊', '🧩', '⏳', '🌟', '📈', '🛑']
 
-    // Безопасный извлекатель строк: Исключаем инструкции ИИ и системные промпты
-    const getString = (val: any) => {
+    // Рекурсивный глубокий извлекатель строк, который отсекает промпты и анкеты
+    const getString = (val: any): string => {
         if (!val) return ''
         if (typeof val === 'string') return val
-        // Берем контент или значение, но ИГНОРИРУЕМ instructions и сырой JSON
-        return val.content || val.value || ''
+        
+        // Если это массив (например, список пунктов от ИИ)
+        if (Array.isArray(val)) {
+            return val.map(item => getString(item)).filter(Boolean).join('\n')
+        }
+
+        // Если это объект, проверяем приоритетные поля генерации ИИ
+        if (typeof val === 'object') {
+            // Если ИИ вложил ответ в val.content или val.value (если value - строка)
+            if (val.content && typeof val.content === 'string') return val.content
+            if (val.value && typeof val.value === 'string') return val.value
+            
+            // Если внутри value лежит еще один объект (глубокая вложенность Mistral)
+            if (val.value && typeof val.value === 'object') {
+                if (val.value.content && typeof val.value.content === 'string') return val.value.content
+                if (val.value.value && typeof val.value.value === 'string') return val.value.value
+            }
+            
+            // Защита: если это объект параметров пользователя (например, рост, возраст) - ИГНОРИРУЕМ его,
+            // чтобы не выводить технические ответы пользователя на экран.
+            if (val.currentHeight || val.targetHeight || val.fatherHeight || val.answers) {
+                return '' 
+            }
+
+            // Фолбек на случай, если контент лежит в других текстовых полях объекта
+            const textCandidate = val.content || val.value || val.text
+            if (textCandidate) return getString(textCandidate)
+        }
+
+        return ''
     }
 
     const intro = getString(analysis?.intro_analysis)
@@ -62,25 +90,20 @@ export function formatAnalysisForUser(
         const emoji = emojis[index % emojis.length]
         const title = block.title || '...'
         
-        // Приоритет полям, куда Mistral пишет текстовый ответ
-        let content = block.content || block.value || ''
-
-        if (Array.isArray(content)) {
-            content = content.map((item) => `• ${item}`).join('\n')
-        }
+        // Передаем весь блок в getString, она сама разберется с вложенностью полей
+        let content = getString(block)
 
         let blockMessage = `${emoji} <b>${title}</b>\n`
 
         if (block.visibility === 'free' || isPaid) {
-            if (content && String(content).trim() !== '') {
-                blockMessage += `${markdownToHtml(String(content))}\n`
+            if (content && content.trim() !== '') {
+                blockMessage += `${markdownToHtml(content)}\n`
             } else {
                 blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
             }
         } else if (block.visibility === 'partial') {
-            const contentStr = String(content || '')
-            if (contentStr.trim() !== '') {
-                const teaser = contentStr.length > 100 ? contentStr.slice(0, 100) + '...' : contentStr
+            if (content && content.trim() !== '') {
+                const teaser = content.length > 100 ? content.slice(0, 100) + '...' : content
                 blockMessage += `${markdownToHtml(teaser)}\n<i>${i18n.t(lang, 'messages.analysis_partial_hint')}</i>\n`
             } else {
                 blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
