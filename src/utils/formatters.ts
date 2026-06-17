@@ -40,86 +40,64 @@ export function formatAnalysisForUser(
     config: any = { price: 699 },
 ): string[] {
     const messages: string[] = []
-    const emojis = [
-        '🧬',
-        '🎲',
-        '⛓️',
-        '🎯',
-        '🛡️',
-        '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji>',
-        '🧩',
-        '⏳',
-        '🌟',
-        '📈',
-        '🛑',
-    ]
+    const emojis = ['🧬', '🎲', '⛓️', '🎯', '🛡️', '📊', '🧩', '⏳', '🌟', '📈', '🛑']
 
-    // Helper to safely get string from potentially object field
+    // Безопасный извлекатель строк: Исключаем инструкции ИИ и системные промпты
     const getString = (val: any) => {
         if (!val) return ''
         if (typeof val === 'string') return val
-        return val.content || val.instructions || val.value || JSON.stringify(val)
+        // Берем контент или значение, но ИГНОРИРУЕМ instructions и сырой JSON
+        return val.content || val.value || ''
     }
 
     const intro = getString(analysis?.intro_analysis)
     const closing = getString(analysis?.closing_hook)
     const blocks = analysis?.structured_blocks || []
 
-    // Intro text
     const introText = `<b>${i18n.t(lang, 'messages.analysis_title')}</b>\n\n${markdownToHtml(intro)}`
 
-    // ... (начало функции без изменений)
+    blocks.forEach((block, index) => {
+        if (!block) return
 
-blocks.forEach((block, index) => {
-    if (!block) return
+        const emoji = emojis[index % emojis.length]
+        const title = block.title || '...'
+        
+        // Приоритет полям, куда Mistral пишет текстовый ответ
+        let content = block.content || block.value || ''
 
-    const emoji = emojis[index % emojis.length]
-    const title = block.title || '...'
-    
-    // СТРОГОЕИЗМЕНЕНИЕ: Берем ТОЛЬКО реальный контент от ИИ.
-    // Не берем block.instructions или block.value, чтобы не выводить данные пользователя или промпты.
-    let content = block.content || '' 
-
-    // Formatting arrays into list
-    if (Array.isArray(content)) {
-        content = content.map((item) => `• ${item}`).join('\n')
-    }
-
-    let blockMessage = `${emoji} <b>${title}</b>\n`
-
-    if (block.visibility === 'free' || isPaid) {
-        // Проверяем наличие реального контента
-        if (content && String(content).trim() !== '') {
-            blockMessage += `${markdownToHtml(String(content))}\n`
-        } else {
-            blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
+        if (Array.isArray(content)) {
+            content = content.map((item) => `• ${item}`).join('\n')
         }
-    } else if (block.visibility === 'partial') {
-        const contentStr = String(content || '')
-        if (contentStr.trim() !== '') {
-            const teaser = contentStr.length > 100 ? contentStr.slice(0, 100) + '...' : contentStr
-            blockMessage += `${markdownToHtml(teaser)}\n<i>${i18n.t(lang, 'messages.analysis_partial_hint')}</i>\n`
+
+        let blockMessage = `${emoji} <b>${title}</b>\n`
+
+        if (block.visibility === 'free' || isPaid) {
+            if (content && String(content).trim() !== '') {
+                blockMessage += `${markdownToHtml(String(content))}\n`
+            } else {
+                blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
+            }
+        } else if (block.visibility === 'partial') {
+            const contentStr = String(content || '')
+            if (contentStr.trim() !== '') {
+                const teaser = contentStr.length > 100 ? contentStr.slice(0, 100) + '...' : contentStr
+                blockMessage += `${markdownToHtml(teaser)}\n<i>${i18n.t(lang, 'messages.analysis_partial_hint')}</i>\n`
+            } else {
+                blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
+            }
         } else {
-            blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
+            blockMessage += `<i>${i18n.t(lang, 'messages.analysis_locked_hint')}</i>\n`
         }
-    } else {
-        blockMessage += `<i>${i18n.t(lang, 'messages.analysis_locked_hint')}</i>\n`
-    }
 
-    messages.push(blockMessage)
-})
+        messages.push(blockMessage)
+    })
 
-// ... (остаток функции без изменений)
-
-    // Settle intro with first block
     if (messages.length > 0) {
         messages[0] = `${introText}\n\n${messages[0]}`
     } else if (intro) {
-        // If no blocks, at least return intro
         messages.push(introText)
     }
 
-    // Append closing hook to the last message
     if (closing && messages.length > 0) {
         messages[messages.length - 1] += `\n${markdownToHtml(closing)}`
     }
