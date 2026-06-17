@@ -32,15 +32,16 @@ export class AiService {
                 model: modelName,
                 messages: [
                     { role: 'system', content: systemPrompt },
-                    {\n                        role: 'user',
+                    {
+                        role: 'user',
                         content:
                             userMessage +
                             '\n\nIMPORTANT: You must return a valid JSON object. Do not include any markdown backticks or preamble.',
                     },
                 ],
                 responseFormat: { type: 'json_object' },
-                temperature: 0.5, 
-                maxTokens: 4000   
+                temperature: 0.5,
+                maxTokens: 4000
             })
 
             const content = response.choices?.[0]?.message?.content
