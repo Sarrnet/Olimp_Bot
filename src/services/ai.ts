@@ -40,8 +40,8 @@ export class AiService {
                     },
                 ],
                 responseFormat: { type: 'json_object' },
-                temperature: 0.5, 
-                maxTokens: 4000   
+                temperature: 0.5,
+                maxTokens: 4000
             })
 
             const content = response.choices?.[0]?.message?.content
@@ -69,5 +69,6 @@ export class AiService {
             throw error
         }
     }
+}
 
 export const aiService = new AiService()
