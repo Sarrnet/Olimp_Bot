@@ -12,15 +12,14 @@ export interface AnalysisPromptTemplate {
     language: string
     input_description: {
         type: string
+        source?: string // <-- ДОБАВЬТЕ ЭТУ СТРОКУ, она спасет от ошибки с 'source'!
         fields: string[]
-        [key: string]: any // Позволяет добавлять любые поля (например, source) без ошибок
     }
     core_instructions: string[]
     interpretation_logic: string[]
     critical_bias_rules: string[]
     response_structure: any
     tone: string[]
-    [key: string]: any // Позволяет структуре JSON иметь любые дополнительные свойства
 }
 
 export class PromptBuilder {
