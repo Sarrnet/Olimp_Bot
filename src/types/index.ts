@@ -32,9 +32,9 @@ export interface StructuredBlock {
 }
 
 export interface AnalysisResponse {
-    intro_analysis: string | any
+    intro_analysis: string
     structured_blocks: StructuredBlock[]
-    closing_hook: string | any
+    closing_hook: string
 }
 
 export interface DailyGrowthApplied {
@@ -45,13 +45,4 @@ export interface DailyGrowthApplied {
 
 export interface UserGrowthLog {
     [date: string]: DailyGrowthApplied
-}
-declare module "*/data/analysis_prompt.ru.json" {
-    const value: any;
-    export default value;
-}
-
-declare module "*/data/analysis_prompt.en.json" {
-    const value: any;
-    export default value;
 }
