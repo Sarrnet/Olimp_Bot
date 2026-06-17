@@ -7,9 +7,10 @@ export const markdownToHtml = (text: any): string => {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
 
+    // 1. Восстанавливаем разрешенные теги
     html = html.replace(/&lt;(\/?(b|i|code|a|u|s)( [^>]*)?)&gt;/gi, '<$1>')
 
-    // 2. Списки: обрабатываем ДО курсива и жирного шрифта, чтобы избежать конфликтов
+    // 2. Списки: обрабатываем в первую очередь
     html = html
         .split('\n')
         .map((line) => {
@@ -20,17 +21,17 @@ export const markdownToHtml = (text: any): string => {
         })
         .join('\n')
 
-    // 3. Жирный: **text** or __text__
-    html = html.replace(/(\*\*|__)(.*?)\1/g, '<b>$2</b>')
+    // 3. Жирный: запрещаем пересекать границы HTML-тегов (< и >)
+    html = html.replace(/(\*\*|__)([^<>]*?)\1/g, '<b>$2</b>')
 
-    // 4. Курсив: *text* or _text_
-    html = html.replace(/(\*|_)(.*?)\1/g, '<i>$2</i>')
+    // 4. Курсив: запрещаем пересекать границы HTML-тегов (< и >)
+    html = html.replace(/(\*|_)([^<>]*?)\1/g, '<i>$2</i>')
 
-    // 5. Inline code
-    html = html.replace(/`(.*?)`/g, '<code>$1</code>')
+    // 5. Code
+    html = html.replace(/`([^<>]*?)`/g, '<code>$1</code>')
 
     // 6. Ссылки
-    html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
+    html = html.replace(/\[([^<>]*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
 
     return html
 }
