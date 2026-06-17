@@ -6,7 +6,7 @@ import { UserProfile } from '../types/index.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export interface AnalysisPromptTemplate {
+interface AnalysisPromptTemplate {
     prompt_id: string
     role: string
     language: string
@@ -35,9 +35,9 @@ export class PromptBuilder {
         const promptPath = path.join(__dirname, `../data/analysis_prompt.${lang}.json`)
         const rawData = fs.readFileSync(promptPath, 'utf-8')
         
-        // Безопасно парсим JSON без каких-либо проверок со стороны компилятора
-        const parsed = JSON.parse(rawData)
-        this.templateCache[lang] = parsed
+        // Полностью изолируем JSON от строгого сканирования компилятора
+        const parsed = JSON.parse(rawData) as unknown
+        this.templateCache[lang] = parsed as any
         
         return this.templateCache[lang] as AnalysisPromptTemplate
     }
@@ -45,7 +45,6 @@ export class PromptBuilder {
     buildSystemPrompt(lang: string = 'ru'): string {
         const template = this.getTemplate(lang)
         
-        // Защита на случай, если массивы пустые или отсутствуют в JSON
         const coreInstructions = Array.isArray(template.core_instructions) ? template.core_instructions : []
         const interpretationLogic = Array.isArray(template.interpretation_logic) ? template.interpretation_logic : []
         const criticalBiasRules = Array.isArray(template.critical_bias_rules) ? template.critical_bias_rules : []
@@ -74,8 +73,6 @@ ${JSON.stringify(template.response_structure || {}, null, 2)}
 
     buildUserMessage(profile: UserProfile, lang: string = 'ru'): string {
         const template = this.getTemplate(lang)
-        
-        // Защита, если input_description или fields не определены
         const fields = template.input_description?.fields || []
         
         const userData = fields
