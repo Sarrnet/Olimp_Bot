@@ -25,15 +25,18 @@ export class PromptBuilder {
     private templateCache: Record<string, any> = {}
   
   private getTemplate(lang: string = 'ru'): AnalysisPromptTemplate {
-      if (this.templateCache[lang]) {
-        return this.templateCache[lang]
-      }
-    
-    const promptPath = path.join(__dirname, `../data/analysis_prompt.${lang}.json`)
-    const rawData = fs.readFileSync(promptPath, 'utf-8')
-    this.templateCache[lang] = JSON.parse(rawData)
-    return this.templateCache[lang]
-  }
+        if (this.templateCache[lang]) {
+            return this.templateCache[lang]
+        }
+
+        const promptPath = path.join(__dirname, `../data/analysis_prompt.${lang}.json`)
+        const rawData = fs.readFileSync(promptPath, 'utf-8')
+        
+        // Приведение к any убирает строгую проверку полей JSON компилятором
+        this.templateCache[lang] = JSON.parse(rawData) as any
+        
+        return this.templateCache[lang] as AnalysisPromptTemplate
+    }
 
     buildSystemPrompt(lang: string = 'ru'): string {
         const template = this.getTemplate(lang)
