@@ -24,7 +24,7 @@ export interface AnalysisPromptTemplate {
 export class PromptBuilder {
     private templateCache: Record<string, any> = {}
   
-  private getTemplate(lang: string = 'ru'): AnalysisPromptTemplate {
+    private getTemplate(lang: string = 'ru'): AnalysisPromptTemplate {
         if (this.templateCache[lang]) {
             return this.templateCache[lang]
         }
@@ -32,8 +32,10 @@ export class PromptBuilder {
         const promptPath = path.join(__dirname, `../data/analysis_prompt.${lang}.json`)
         const rawData = fs.readFileSync(promptPath, 'utf-8')
         
-        // Приведение к any убирает строгую проверку полей JSON компилятором
-        this.templateCache[lang] = JSON.parse(rawData) as any
+        // Используем двойное приведение (unknown -> any), чтобы полностью отключить 
+        // глубокую проверку структуры JSON на этапе компиляции TypeScript
+        const parsed = JSON.parse(rawData) as unknown
+        this.templateCache[lang] = parsed as any
         
         return this.templateCache[lang] as AnalysisPromptTemplate
     }
