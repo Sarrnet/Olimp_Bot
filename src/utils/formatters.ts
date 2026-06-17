@@ -42,39 +42,13 @@ export function formatAnalysisForUser(
     const messages: string[] = []
     const emojis = ['🧬', '🎲', '⛓️', '🎯', '🛡️', '📊', '🧩', '⏳', '🌟', '📈', '🛑']
 
-    // Рекурсивный глубокий извлекатель строк, который отсекает промпты и анкеты
+    // Вспомогательная функция для безопасного извлечения только строк
     const getString = (val: any): string => {
         if (!val) return ''
         if (typeof val === 'string') return val
-        
-        // Если это массив (например, список пунктов от ИИ)
-        if (Array.isArray(val)) {
-            return val.map(item => getString(item)).filter(Boolean).join('\n')
+        if (typeof val === 'object' && val.content && typeof val.content === 'string') {
+            return val.content
         }
-
-        // Если это объект, проверяем приоритетные поля генерации ИИ
-        if (typeof val === 'object') {
-            // Если ИИ вложил ответ в val.content или val.value (если value - строка)
-            if (val.content && typeof val.content === 'string') return val.content
-            if (val.value && typeof val.value === 'string') return val.value
-            
-            // Если внутри value лежит еще один объект (глубокая вложенность Mistral)
-            if (val.value && typeof val.value === 'object') {
-                if (val.value.content && typeof val.value.content === 'string') return val.value.content
-                if (val.value.value && typeof val.value.value === 'string') return val.value.value
-            }
-            
-            // Защита: если это объект параметров пользователя (например, рост, возраст) - ИГНОРИРУЕМ его,
-            // чтобы не выводить технические ответы пользователя на экран.
-            if (val.currentHeight || val.targetHeight || val.fatherHeight || val.answers) {
-                return '' 
-            }
-
-            // Фолбек на случай, если контент лежит в других текстовых полях объекта
-            const textCandidate = val.content || val.value || val.text
-            if (textCandidate) return getString(textCandidate)
-        }
-
         return ''
     }
 
@@ -90,8 +64,13 @@ export function formatAnalysisForUser(
         const emoji = emojis[index % emojis.length]
         const title = block.title || '...'
         
-        // Передаем весь блок в getString, она сама разберется с вложенностью полей
-        let content = getString(block)
+        // Теперь мы строго берем сгенерированный ИИ контент
+        let content = getString(block.content)
+
+        // Если контента нет, проверяем, возможно ИИ по старой памяти записал в block.value
+        if (!content && block.value && typeof block.value === 'string') {
+            content = block.value
+        }
 
         let blockMessage = `${emoji} <b>${title}</b>\n`
 
@@ -103,7 +82,7 @@ export function formatAnalysisForUser(
             }
         } else if (block.visibility === 'partial') {
             if (content && content.trim() !== '') {
-                const teaser = content.length > 100 ? content.slice(0, 100) + '...' : content
+                const teaser = content.length > 110 ? content.slice(0, 110) + '...' : content
                 blockMessage += `${markdownToHtml(teaser)}\n<i>${i18n.t(lang, 'messages.analysis_partial_hint')}</i>\n`
             } else {
                 blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
