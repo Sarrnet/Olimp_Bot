@@ -164,23 +164,38 @@ export async function handleGetAnalysis(ctx: MyContext) {
             firstMsg = analysisMessages.splice(firstMsgIndex, 1)[0]
         }
 
-        // Отправляем Visual Board с этим текстом в качестве caption
+        // В начале analysis.handler.ts убедитесь, что импортирована нужная функция
+// import { splitHtmlMessage } from '../../utils/telegram.js'
+
+        // ... код генерации board ...
+
+        // Отправляем Visual Board
         if (imageToCache) {
             const photoInput =
                 typeof imageToCache === 'string' ? imageToCache : Input.fromBuffer(imageToCache)
             let sentMsg
 
             try {
-                // Используем текст как caption, ограничивая длину для безопасности (лимит 1024)
+                // Безопасная обрезка для caption с использованием существующей утилиты
+                const safeCaption = firstMsg.length > 1024 
+                    ? splitHtmlMessage(firstMsg, 1024)[0] 
+                    : firstMsg;
+
                 sentMsg = await ctx.replyWithPhoto(photoInput, {
-                    caption: firstMsg.length > 1024 ? firstMsg.slice(0, 1021) + '...' : firstMsg,
+                    caption: safeCaption,
                     parse_mode: 'HTML',
                 })
             } catch (err: any) {
                 logger.error('Error sending visual board photo with caption:', err)
-                // Если не влезло или ошибка разметки - шлем раздельно
+                // Если ошибка разметки все же произошла - шлем картинку раздельно
                 await ctx.replyWithPhoto(photoInput)
-                if (firstMsg) await ctx.reply(firstMsg, { parse_mode: 'HTML' })
+                if (firstMsg) {
+                    // Используем splitHtmlMessage для безопасной отправки текста чанками
+                    const safeChunks = splitHtmlMessage(firstMsg, 4000);
+                    for (const chunk of safeChunks) {
+                         await ctx.reply(chunk, { parse_mode: 'HTML' })
+                    }
+                }
             }
 
             // Save file_id if it was a new generation
