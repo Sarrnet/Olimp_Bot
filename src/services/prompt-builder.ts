@@ -13,12 +13,14 @@ export interface AnalysisPromptTemplate {
     input_description: {
         type: string
         fields: string[]
+        [key: string]: any // Позволяет добавлять любые поля (например, source) без ошибок
     }
     core_instructions: string[]
     interpretation_logic: string[]
     critical_bias_rules: string[]
     response_structure: any
     tone: string[]
+    [key: string]: any // Позволяет структуре JSON иметь любые дополнительные свойства
 }
 
 export class PromptBuilder {
@@ -32,8 +34,8 @@ export class PromptBuilder {
         const promptPath = path.join(__dirname, `../data/analysis_prompt.${lang}.json`)
         const rawData = fs.readFileSync(promptPath, 'utf-8')
         
-        // Используем двойное приведение (unknown -> any), чтобы полностью отключить 
-        // глубокую проверку структуры JSON на этапе компиляции TypeScript
+        // Двойное приведение типов (as unknown as any) полностью отключает 
+        // строгую валидацию структуры JSON на этапе компиляции проекта.
         const parsed = JSON.parse(rawData) as unknown
         this.templateCache[lang] = parsed as any
         
