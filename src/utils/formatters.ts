@@ -2,6 +2,9 @@ import { AnalysisResponse } from '../types/index.js'
 import { i18n } from '../services/i18n.js'
 import { markdownToHtml } from './markdown.js'
 
+/**
+ * Форматирует структуру ответа ИИ в сообщения для отправки пользователю
+ */
 export function formatAnalysisForUser(
     analysis: AnalysisResponse,
     isPaid: boolean,
@@ -60,9 +63,24 @@ export function formatAnalysisForUser(
 }
 
 /**
- * Экспортируем функцию для фикса ошибки TS2305 в src/index.ts
+ * Универсальная функция форматирования тарифов, принимающая любые аргументы.
+ * Извлекает цену из переданного объекта Prisma или использует дефолтную.
  */
-export function formatTariffs(lang: string = 'ru', config: any = { price: 699 }): string {
-    const price = config?.price || 699
+export function formatTariffs(...args: any[]): string {
+    // Пытаемся найти язык и цену среди переданных аргументов
+    let lang = 'ru'
+    let price = 699
+
+    for (const arg of args) {
+        if (typeof arg === 'string') {
+            lang = arg
+        } else if (arg && typeof arg === 'object') {
+            // Если передан объект тарифа из базы данных (Prisma)
+            if (typeof arg.price === 'number') price = arg.price
+            if (typeof arg.price === 'string') price = parseInt(arg.price, 10) || 699
+        }
+    }
+
+    // Возвращаем отформатированную строку из локализации
     return i18n.t(lang, 'messages.tariffs_message', { price })
 }
