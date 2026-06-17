@@ -46,3 +46,12 @@ export interface DailyGrowthApplied {
 export interface UserGrowthLog {
     [date: string]: DailyGrowthApplied
 }
+declare module "*/data/analysis_prompt.ru.json" {
+    const value: any;
+    export default value;
+}
+
+declare module "*/data/analysis_prompt.en.json" {
+    const value: any;
+    export default value;
+}
