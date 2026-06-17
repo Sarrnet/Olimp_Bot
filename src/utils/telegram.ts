@@ -53,7 +53,7 @@ export function splitHtmlMessage(html: string, limit: number): string[] {
 
     // Find all open tags in this chunk
     const openTags: string[] = []
-    const tagRegex = /<(\/?[a-z1-6]+)([^>]*)>/gi
+    const tagRegex = /<(\/?[a-z1-6-]+)([^>]*)>/gi
     let match
     while ((match = tagRegex.exec(chunk)) !== null) {
       const isClosing = match[1].startsWith('/')
