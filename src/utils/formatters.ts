@@ -58,3 +58,11 @@ export function formatAnalysisForUser(
 
     return messages
 }
+
+/**
+ * Экспортируем функцию для фикса ошибки TS2305 в src/index.ts
+ */
+export function formatTariffs(lang: string = 'ru', config: any = { price: 699 }): string {
+    const price = config?.price || 699
+    return i18n.t(lang, 'messages.tariffs_message', { price })
+}
