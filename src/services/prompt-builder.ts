@@ -12,14 +12,16 @@ export interface AnalysisPromptTemplate {
     language: string
     input_description: {
         type: string
-        source?: string // <-- ДОБАВЬТЕ ЭТУ СТРОКУ, она спасет от ошибки с 'source'!
+        source?: string
         fields: string[]
+        [key: string]: any
     }
     core_instructions: string[]
     interpretation_logic: string[]
     critical_bias_rules: string[]
     response_structure: any
     tone: string[]
+    [key: string]: any
 }
 
 export class PromptBuilder {
@@ -33,40 +35,49 @@ export class PromptBuilder {
         const promptPath = path.join(__dirname, `../data/analysis_prompt.${lang}.json`)
         const rawData = fs.readFileSync(promptPath, 'utf-8')
         
-        // Двойное приведение типов (as unknown as any) полностью отключает 
-        // строгую валидацию структуры JSON на этапе компиляции проекта.
-        const parsed = JSON.parse(rawData) as unknown
-        this.templateCache[lang] = parsed as any
+        // Безопасно парсим JSON без каких-либо проверок со стороны компилятора
+        const parsed = JSON.parse(rawData)
+        this.templateCache[lang] = parsed
         
         return this.templateCache[lang] as AnalysisPromptTemplate
     }
 
     buildSystemPrompt(lang: string = 'ru'): string {
         const template = this.getTemplate(lang)
+        
+        // Защита на случай, если массивы пустые или отсутствуют в JSON
+        const coreInstructions = Array.isArray(template.core_instructions) ? template.core_instructions : []
+        const interpretationLogic = Array.isArray(template.interpretation_logic) ? template.interpretation_logic : []
+        const criticalBiasRules = Array.isArray(template.critical_bias_rules) ? template.critical_bias_rules : []
+        const tone = Array.isArray(template.tone) ? template.tone : []
+
         return `
-Role: ${template.role}
-Language: ${template.language}
+Role: ${template.role || 'system'}
+Language: ${template.language || lang}
 
 Core Instructions:
-${template.core_instructions.map((i) => `- ${i}`).join('\n')}
+${coreInstructions.map((i) => `- ${i}`).join('\n')}
 
 Interpretation Logic:
-${template.interpretation_logic.map((l) => `- ${l}`).join('\n')}
+${interpretationLogic.map((l) => `- ${l}`).join('\n')}
 
 Critical Bias Rules:
-${template.critical_bias_rules.map((r) => `- ${r}`).join('\n')}
+${criticalBiasRules.map((r) => `- ${r}`).join('\n')}
 
-Tone: ${template.tone.join(', ')}
+Tone: ${tone.join(', ')}
 
 Response Structure:
 You MUST respond with a valid JSON object matching this structure:
-${JSON.stringify(template.response_structure, null, 2)}
+${JSON.stringify(template.response_structure || {}, null, 2)}
 `
     }
 
     buildUserMessage(profile: UserProfile, lang: string = 'ru'): string {
         const template = this.getTemplate(lang)
-        const fields = template.input_description.fields
+        
+        // Защита, если input_description или fields не определены
+        const fields = template.input_description?.fields || []
+        
         const userData = fields
             .map((field) => {
                 const value = (profile as any)[field]
