@@ -28,20 +28,21 @@ export class AiService {
             const systemPrompt = promptBuilder.buildSystemPrompt(lang)
             const userMessage = promptBuilder.buildUserMessage(profile, lang)
 
-            const response = await client.chat.complete({
-                model: modelName,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    {
-                        role: 'user',
-                        content:
-                            userMessage +
-                            '\n\nIMPORTANT: You must return a valid JSON object. Do not include any markdown backticks or preamble.',
-                    },
-                ],
-                responseFormat: { type: 'json_object' },
-                temperature: 0.7,
-            })
+            // Находим этот кусок кода в ai.ts:
+const response = await client.chat.complete({
+    model: modelName,
+    messages: [
+        { role: 'system', content: systemPrompt },
+        {
+            role: 'user',
+            content:
+                userMessage +\n                '\\n\\nIMPORTANT: You must return a valid JSON object. Do not include any markdown backticks or preamble.',
+        },
+    ],
+    responseFormat: { type: 'json_object' },
+    temperature: 0.5, // Снижаем до 0.5 для более строгого соблюдения JSON структуры
+    maxTokens: 4000   // ЯВНО ДОБАВЛЯЕМ ЛИМИТ НА ВЫВОД (по умолчанию он часто занижен)
+})
 
             const content = response.choices?.[0]?.message?.content
 
