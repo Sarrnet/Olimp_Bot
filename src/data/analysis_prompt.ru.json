@@ -145,6 +145,8 @@
       }
     ]
   },
+  "interpretation_logic": [],
+  "critical_bias_rules": [],
   "tone": [
     "calm",
     "confident",
