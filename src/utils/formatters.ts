@@ -68,36 +68,48 @@ export function formatAnalysisForUser(
     // Intro text
     const introText = `<b>${i18n.t(lang, 'messages.analysis_title')}</b>\n\n${markdownToHtml(intro)}`
 
-    blocks.forEach((block, index) => {
-        if (!block) return
+    // ... (начало функции без изменений)
 
-        const emoji = emojis[index % emojis.length]
-        const title = block.title || '...'
-        let content = block.content || block.instructions || block.value || ''
+blocks.forEach((block, index) => {
+    if (!block) return
 
-        // Formatting arrays into list
-        if (Array.isArray(content)) {
-            content = content.map((item) => `• ${item}`).join('\n')
+    const emoji = emojis[index % emojis.length]
+    const title = block.title || '...'
+    
+    // СТРОГОЕИЗМЕНЕНИЕ: Берем ТОЛЬКО реальный контент от ИИ.
+    // Не берем block.instructions или block.value, чтобы не выводить данные пользователя или промпты.
+    let content = block.content || '' 
+
+    // Formatting arrays into list
+    if (Array.isArray(content)) {
+        content = content.map((item) => `• ${item}`).join('\n')
+    }
+
+    let blockMessage = `${emoji} <b>${title}</b>\n`
+
+    if (block.visibility === 'free' || isPaid) {
+        // Проверяем наличие реального контента
+        if (content && String(content).trim() !== '') {
+            blockMessage += `${markdownToHtml(String(content))}\n`
+        } else {
+            blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
         }
-
-        let blockMessage = `${emoji} <b>${title}</b>\n`
-
-        if (block.visibility === 'free' || isPaid) {
-            if (content) {
-                blockMessage += `${markdownToHtml(String(content))}\n`
-            } else {
-                blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
-            }
-        } else if (block.visibility === 'partial') {
-            const contentStr = String(content || '')
+    } else if (block.visibility === 'partial') {
+        const contentStr = String(content || '')
+        if (contentStr.trim() !== '') {
             const teaser = contentStr.length > 100 ? contentStr.slice(0, 100) + '...' : contentStr
             blockMessage += `${markdownToHtml(teaser)}\n<i>${i18n.t(lang, 'messages.analysis_partial_hint')}</i>\n`
         } else {
-            blockMessage += `<i>${i18n.t(lang, 'messages.analysis_locked_hint')}</i>\n`
+            blockMessage += `<i>${i18n.t(lang, 'messages.data_not_found')}</i>\n`
         }
+    } else {
+        blockMessage += `<i>${i18n.t(lang, 'messages.analysis_locked_hint')}</i>\n`
+    }
 
-        messages.push(blockMessage)
-    })
+    messages.push(blockMessage)
+})
+
+// ... (остаток функции без изменений)
 
     // Settle intro with first block
     if (messages.length > 0) {
