@@ -246,15 +246,14 @@ export async function handleGetAnalysis(ctx: MyContext) {
                 `⏳ <b>Хватит тратить свое драгоценное время</b>. С каждым днем бездействия <b>твои зоны роста закрываются все сильнее</b>, а шансы стать выше - просто тают.\n\n` +
                 `Активируй свой <b>личный план Увеличения Роста</b>, выбрав тариф ниже:`
 
-            await ctx.replyWithDocument(
-                { source: './assets/promo.pdf' },
+            await ctx.replyWithPhoto(
+                { source: './assets/promo-thumb.jpg' },
                 {
                     caption: upsellCaption,
                     parse_mode: 'HTML',
-                    // @ts-ignore
-                    thumbnail: { source: './assets/promo-thumb.jpg' },
                 },
             )
+            await ctx.replyWithDocument({ source: './assets/promo.pdf' })
 
             // Import and call triggerInvoiceMenu or handle it here.
             // Since it's in index.ts, we'll implement a local version or buy command hint
