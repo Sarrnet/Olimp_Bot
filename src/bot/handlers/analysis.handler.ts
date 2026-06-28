@@ -251,6 +251,8 @@ export async function handleGetAnalysis(ctx: MyContext) {
                 {
                     caption: upsellCaption,
                     parse_mode: 'HTML',
+                    // @ts-ignore
+                    thumbnail: { source: './assets/promo-thumb.jpg' },
                 },
             )
 
