@@ -246,8 +246,8 @@ export async function handleGetAnalysis(ctx: MyContext) {
                 `⏳ <b>Хватит тратить свое драгоценное время</b>. С каждым днем бездействия <b>твои зоны роста закрываются все сильнее</b>, а шансы стать выше - просто тают.\n\n` +
                 `Активируй свой <b>личный план Увеличения Роста</b>, выбрав тариф ниже:`
 
-            await ctx.replyWithPhoto(
-                { source: './assets/images/logo.jpg' },
+            await ctx.replyWithDocument(
+                { source: './assets/promo.pdf' },
                 {
                     caption: upsellCaption,
                     parse_mode: 'HTML',
