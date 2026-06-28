@@ -8,12 +8,11 @@ import { i18n } from '../../services/i18n.js'
 import { logger } from '../../utils/logger.js'
 import { splitHtmlMessage } from '../../utils/telegram.js'
 import { visualBoardService, HeightMetrics } from '../../services/visual-board.js'
-import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const promoThumbBuffer = readFileSync(join(__dirname, '../../assets/promo-thumb.jpg'))
+const promoThumbPath = join(__dirname, '../../assets/promo-thumb.jpg')
 const promoPdfPath = join(__dirname, '../../assets/promo.pdf')
 
 export async function handleGetAnalysis(ctx: MyContext) {
@@ -253,15 +252,11 @@ export async function handleGetAnalysis(ctx: MyContext) {
                 `⏳ <b>Хватит тратить свое драгоценное время</b>. С каждым днем бездействия <b>твои зоны роста закрываются все сильнее</b>, а шансы стать выше - просто тают.\n\n` +
                 `Активируй свой <b>личный план Увеличения Роста</b>, выбрав тариф ниже:`
 
-            await ctx.replyWithDocument(
-                { source: promoPdfPath },
-                {
-                    caption: upsellCaption,
-                    parse_mode: 'HTML',
-                    // @ts-ignore
-                    thumbnail: Input.fromBuffer(promoThumbBuffer, 'promo-thumb.jpg'),
-                },
+            await ctx.replyWithPhoto(
+                { source: promoThumbPath },
+                { caption: upsellCaption, parse_mode: 'HTML' },
             )
+            await ctx.replyWithDocument({ source: promoPdfPath })
 
             // Import and call triggerInvoiceMenu or handle it here.
             // Since it's in index.ts, we'll implement a local version or buy command hint
