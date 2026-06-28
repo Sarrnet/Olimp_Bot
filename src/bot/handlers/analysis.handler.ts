@@ -8,6 +8,7 @@ import { i18n } from '../../services/i18n.js'
 import { logger } from '../../utils/logger.js'
 import { splitHtmlMessage } from '../../utils/telegram.js'
 import { visualBoardService, HeightMetrics } from '../../services/visual-board.js'
+import { promoThumbnail } from '../../assets/promo-thumbnail.js'
 
 export async function handleGetAnalysis(ctx: MyContext) {
     if (ctx.callbackQuery) {
@@ -247,10 +248,14 @@ export async function handleGetAnalysis(ctx: MyContext) {
                 `Активируй свой <b>личный план Увеличения Роста</b>, выбрав тариф ниже:`
 
             await ctx.replyWithDocument(
-                { source: './assets/promo.pdf' },
+                { source: './assets/promo.pdf', filename: 'promo.pdf' },
                 {
                     caption: upsellCaption,
                     parse_mode: 'HTML',
+                    // Telegram генерирует превью PDF на своей стороне, и для этого файла
+                    // оно выходит чисто белым. Поэтому прикладываем готовую миниатюру
+                    // (JPEG 227x320) первой страницы вручную.
+                    thumbnail: { source: promoThumbnail, filename: 'promo-thumb.jpg' },
                 },
             )
 
