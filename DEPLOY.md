@@ -24,6 +24,7 @@ nano .env
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - `AI_API_KEY` (Mistral API)
 - `PAYMENT_TOKEN_...` (хотя бы один провайдер для платежей)
+- `ANALYSIS_CIRCLE_FILE_ID` (необязательно) — `file_id` готового кружка (video note), который показывается в анализе между PDF и тарифами. Если не задан, кружок не отправляется.
 
 ## 3. Запуск приложения
 Запустите Docker-контейнеры в фоновом режиме:

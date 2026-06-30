@@ -259,6 +259,18 @@ export async function handleGetAnalysis(ctx: MyContext) {
                 },
             )
 
+            // Кружок (video note) между PDF и тарифами. Отправляем по готовому
+            // file_id из окружения; если не задан или file_id невалиден — просто
+            // пропускаем, чтобы не ломать показ тарифов.
+            const circleFileId = process.env.ANALYSIS_CIRCLE_FILE_ID
+            if (circleFileId) {
+                try {
+                    await ctx.replyWithVideoNote(circleFileId)
+                } catch (circleErr) {
+                    logger.error('Error sending analysis circle video note:', circleErr)
+                }
+            }
+
             // Import and call triggerInvoiceMenu or handle it here.
             // Since it's in index.ts, we'll implement a local version or buy command hint
             await ctx.reply(i18n.t(lang, 'messages.analysis_pre_upsell'), {
