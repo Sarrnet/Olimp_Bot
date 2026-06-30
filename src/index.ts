@@ -617,13 +617,18 @@ bot.command('ab_stats', handleAdminABStats)
 // чтобы прописать его в ANALYSIS_CIRCLE_FILE_ID. Отвечает только админам.
 // УДАЛИТЬ после того, как file_id получен.
 bot.on('video_note', async (ctx) => {
-    if (!isAdmin(ctx)) return
-    const fileId = ctx.message.video_note.file_id
-    logger.info(`ANALYSIS_CIRCLE_FILE_ID candidate: ${fileId}`)
-    await ctx.reply(
-        `🎯 file_id этого кружка:\n\`${fileId}\`\n\nСкопируйте его в .env → ANALYSIS_CIRCLE_FILE_ID`,
-        { parse_mode: 'Markdown' },
-    )
+    try {
+        if (!isAdmin(ctx)) return
+        const fileId = ctx.message?.video_note?.file_id
+        if (!fileId) return
+        logger.info(`ANALYSIS_CIRCLE_FILE_ID candidate: ${fileId}`)
+        // Без parse_mode, чтобы никакие символы в file_id не ломали разметку.
+        await ctx.reply(
+            `🎯 file_id этого кружка (скопируйте в .env → ANALYSIS_CIRCLE_FILE_ID):\n\n${fileId}`,
+        )
+    } catch (e) {
+        logger.error('Error in temporary video_note file_id handler:', e)
+    }
 })
 
 bot.hears([/📊 Статистика/, /📊 Statistics/], handleAdminStats)
