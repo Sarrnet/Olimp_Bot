@@ -613,6 +613,19 @@ bot.command('export_user', handleAdminExportUser)
 bot.command('admin_grant', handleAdminGrant)
 bot.command('ab_stats', handleAdminABStats)
 
+// ВРЕМЕННЫЙ хендлер: помогает получить file_id отправленного кружка (video note),
+// чтобы прописать его в ANALYSIS_CIRCLE_FILE_ID. Отвечает только админам.
+// УДАЛИТЬ после того, как file_id получен.
+bot.on('video_note', async (ctx) => {
+    if (!isAdmin(ctx)) return
+    const fileId = ctx.message.video_note.file_id
+    logger.info(`ANALYSIS_CIRCLE_FILE_ID candidate: ${fileId}`)
+    await ctx.reply(
+        `🎯 file_id этого кружка:\n\`${fileId}\`\n\nСкопируйте его в .env → ANALYSIS_CIRCLE_FILE_ID`,
+        { parse_mode: 'Markdown' },
+    )
+})
+
 bot.hears([/📊 Статистика/, /📊 Statistics/], handleAdminStats)
 bot.hears([/🏷 A\/B Тесты/, /🏷 A\/B Tests/], handleAdminABList)
 bot.hears([/📢 Рассылка/, /📢 Broadcast/], (ctx) => {
