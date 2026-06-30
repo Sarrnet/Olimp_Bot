@@ -216,14 +216,19 @@ async function triggerInvoiceMenu(ctx: MyContext, days: number = 30) {
         Markup.button.callback(`🌍 Boosty (оплата из большинства стран мира)`, `pay:boosty`),
     ])
 
-    // 1b. Tribute (Observer Bot Pattern, как Boosty) — показываем только если задана ссылка
+    // 2. Manual Payment
+    buttons.push([
+        Markup.button.callback(`${i18n.t(lang, 'buttons.manual_payment')}`, `pay:manual:${days}`),
+    ])
+
+    // 3. Tribute (Observer Bot Pattern, как Boosty) — показываем только если задана ссылка
     if (process.env.TRIBUTE_URL) {
         buttons.push([
             Markup.button.callback(`💳 Tribute (карты всего мира)`, `pay:tribute`),
         ])
     }
 
-    // 2. Crypto Pay
+    // 4. Crypto Pay
     const cryptoProvider = PAYMENT_PROVIDERS['crypto_pay']
     if (cryptoProvider && cryptoProvider.token) {
         buttons.push([
@@ -235,12 +240,7 @@ async function triggerInvoiceMenu(ctx: MyContext, days: number = 30) {
         ])
     }
 
-    // 3. Manual Payment
-    buttons.push([
-        Markup.button.callback(`${i18n.t(lang, 'buttons.manual_payment')}`, `pay:manual:${days}`),
-    ])
-
-    // 4. Telegram Stars
+    // 5. Telegram Stars
     const starsProvider = PAYMENT_PROVIDERS['telegram_stars']
     if (starsProvider) {
         buttons.push([
@@ -251,7 +251,7 @@ async function triggerInvoiceMenu(ctx: MyContext, days: number = 30) {
         ])
     }
 
-    // 5. Other Providers (Sequential)
+    // 6. Other Providers (Sequential)
     const otherProviders = Object.values(PAYMENT_PROVIDERS).filter((p) => {
         // Проверка ЮKassa по просьбе пользователя
         if (p.id === 'yookassa' && !process.env.YOOKASSA_TOKEN) {

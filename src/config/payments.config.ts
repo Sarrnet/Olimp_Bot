@@ -58,7 +58,7 @@ export const PAYMENT_PROVIDERS: Record<string, PaymentProvider> = {
     },
     crypto_pay: {
         id: 'crypto_pay',
-        label: 'Crypto Pay (карты всех стран)',
+        label: 'Crypto Pay (карты всего мира)',
         currency: 'USDT', // Default, but can be multiple
         flag: '⚡',
         token: process.env.CRYPTO_PAY_TOKEN,
