@@ -170,26 +170,66 @@ export async function handleGetAnalysis(ctx: MyContext) {
 
         // ... код генерации board ...
 
-        // Отправляем Visual Board
-        if (imageToCache) {
-            const photoInput =
-                typeof imageToCache === 'string' ? imageToCache : Input.fromBuffer(imageToCache)
-            let sentMsg
+        // Отправляем интро-сообщение.
+        // Платным пользователям прикрепляем сгенерированную картинку (визуальную
+        // доску) и НЕ показываем PDF. Неоплатившим — PDF (картинка у них идёт
+        // ниже, вместе с апселлом). Так PDF и картинка «поменялись местами».
+        // Безопасная обрезка для caption с использованием существующей утилиты
+        const introCaption = firstMsg.length > 1024
+            ? splitHtmlMessage(firstMsg, 1024)[0]
+            : firstMsg;
 
+        if (user.paid) {
+            if (imageToCache) {
+                const photoInput =
+                    typeof imageToCache === 'string'
+                        ? imageToCache
+                        : Input.fromBuffer(imageToCache)
+                try {
+                    const sentMsg = await ctx.replyWithPhoto(photoInput, {
+                        caption: introCaption,
+                        parse_mode: 'HTML',
+                    })
+
+                    // Save file_id if it was a new generation
+                    if (typeof imageToCache !== 'string' && sentMsg?.photo) {
+                        const fileId = sentMsg.photo[sentMsg.photo.length - 1].file_id
+                        await prisma.user.update({
+                            where: { telegramId },
+                            data: { analysisImageFileId: fileId },
+                        })
+                    }
+                } catch (err: any) {
+                    logger.error('Error sending visual board photo with intro caption:', err)
+                    // Если ошибка разметки все же произошла - шлём картинку и текст раздельно
+                    await ctx.replyWithPhoto(photoInput).catch(() => {})
+                    if (firstMsg) {
+                        const safeChunks = splitHtmlMessage(firstMsg, 4000);
+                        for (const chunk of safeChunks) {
+                            await ctx.reply(chunk, { parse_mode: 'HTML' })
+                        }
+                    }
+                }
+            } else if (firstMsg) {
+                await ctx.reply(firstMsg, { parse_mode: 'HTML' })
+            }
+        } else {
             try {
-                // Безопасная обрезка для caption с использованием существующей утилиты
-                const safeCaption = firstMsg.length > 1024 
-                    ? splitHtmlMessage(firstMsg, 1024)[0] 
-                    : firstMsg;
-
-                sentMsg = await ctx.replyWithPhoto(photoInput, {
-                    caption: safeCaption,
-                    parse_mode: 'HTML',
-                })
+                await ctx.replyWithDocument(
+                    { source: './assets/promo.pdf', filename: 'promo.pdf' },
+                    {
+                        caption: introCaption,
+                        parse_mode: 'HTML',
+                        // Telegram генерирует превью PDF на своей стороне, и для этого файла
+                        // оно выходит чисто белым. Поэтому прикладываем готовую миниатюру
+                        // (JPEG 227x320) первой страницы вручную.
+                        thumbnail: { source: promoThumbnail, filename: 'promo-thumb.jpg' },
+                    },
+                )
             } catch (err: any) {
-                logger.error('Error sending visual board photo with caption:', err)
-                // Если ошибка разметки все же произошла - шлем картинку раздельно
-                await ctx.replyWithPhoto(photoInput)
+                logger.error('Error sending intro PDF with caption:', err)
+                // Если ошибка разметки все же произошла - шлем PDF раздельно
+                await ctx.replyWithDocument({ source: './assets/promo.pdf', filename: 'promo.pdf' })
                 if (firstMsg) {
                     // Используем splitHtmlMessage для безопасной отправки текста чанками
                     const safeChunks = splitHtmlMessage(firstMsg, 4000);
@@ -198,17 +238,6 @@ export async function handleGetAnalysis(ctx: MyContext) {
                     }
                 }
             }
-
-            // Save file_id if it was a new generation
-            if (typeof imageToCache !== 'string' && sentMsg?.photo) {
-                const fileId = sentMsg.photo[sentMsg.photo.length - 1].file_id
-                await prisma.user.update({
-                    where: { telegramId },
-                    data: { analysisImageFileId: fileId },
-                })
-            }
-        } else if (firstMsg) {
-            await ctx.reply(firstMsg, { parse_mode: 'HTML' })
         }
 
         // Шаг 2: Находим и извлекаем "Ваш потенциальный генетический рост"
@@ -247,17 +276,37 @@ export async function handleGetAnalysis(ctx: MyContext) {
                 `⏳ <b>Хватит тратить свое драгоценное время</b>. С каждым днем бездействия <b>твои зоны роста закрываются все сильнее</b>, а шансы стать выше - просто тают.\n\n` +
                 `Активируй свой <b>личный план Увеличения Роста</b>, выбрав тариф ниже:`
 
-            await ctx.replyWithDocument(
-                { source: './assets/promo.pdf', filename: 'promo.pdf' },
-                {
-                    caption: upsellCaption,
-                    parse_mode: 'HTML',
-                    // Telegram генерирует превью PDF на своей стороне, и для этого файла
-                    // оно выходит чисто белым. Поэтому прикладываем готовую миниатюру
-                    // (JPEG 227x320) первой страницы вручную.
-                    thumbnail: { source: promoThumbnail, filename: 'promo-thumb.jpg' },
-                },
-            )
+            // Отправляем визуальную доску (картинку) с upsell-текстом
+            // (ранее здесь был PDF — теперь PDF и картинка поменялись местами)
+            if (imageToCache) {
+                const photoInput =
+                    typeof imageToCache === 'string'
+                        ? imageToCache
+                        : Input.fromBuffer(imageToCache)
+
+                try {
+                    const sentMsg = await ctx.replyWithPhoto(photoInput, {
+                        caption: upsellCaption,
+                        parse_mode: 'HTML',
+                    })
+
+                    // Save file_id if it was a new generation
+                    if (typeof imageToCache !== 'string' && sentMsg?.photo) {
+                        const fileId = sentMsg.photo[sentMsg.photo.length - 1].file_id
+                        await prisma.user.update({
+                            where: { telegramId },
+                            data: { analysisImageFileId: fileId },
+                        })
+                    }
+                } catch (err: any) {
+                    logger.error('Error sending visual board photo with upsell caption:', err)
+                    // Если ошибка разметки все же произошла - шлём картинку и текст раздельно
+                    await ctx.replyWithPhoto(photoInput).catch(() => {})
+                    await ctx.reply(upsellCaption, { parse_mode: 'HTML' })
+                }
+            } else {
+                await ctx.reply(upsellCaption, { parse_mode: 'HTML' })
+            }
 
             // Кружок (video note) между PDF и тарифами. Отправляем по готовому
             // file_id из окружения; если не задан или file_id невалиден — просто
