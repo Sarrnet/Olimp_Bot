@@ -71,9 +71,12 @@ export function registerPaymentHandlers(bot: Telegraf<MyContext>) {
 
             if (newStatus === 'member' || newStatus === 'administrator' || newStatus === 'creator') {
                 // ПОЛЬЗОВАТЕЛЬ ВСТУПИЛ (ОПЛАТИЛ)
-                await prisma.user.update({
+                // upsert, а не update: пользователь мог оплатить во внешнем сервисе
+                // и вступить в канал ещё до запуска /start (записи в БД может не быть).
+                await prisma.user.upsert({
                     where: { telegramId },
-                    data: { paid: true }
+                    update: { paid: true, paymentDate: new Date(), lastPaymentProvider: 'boosty' },
+                    create: { telegramId, paid: true, paymentDate: new Date(), lastPaymentProvider: 'boosty' }
                 });
 
                 await ctx.telegram.sendMessage(userId,
@@ -89,7 +92,11 @@ export function registerPaymentHandlers(bot: Telegraf<MyContext>) {
 
                 // Проверяем, нет ли у пользователя другой активной подписки (например, купленной за звезды/крипту)
                 const user = await prisma.user.findUnique({ where: { telegramId } });
-                if (user && user.subscriptionExpiry && user.subscriptionExpiry > new Date()) {
+                if (!user) {
+                    // Записи нет — отзывать нечего.
+                    return;
+                }
+                if (user.subscriptionExpiry && user.subscriptionExpiry > new Date()) {
                     logger.info(`User ${userId} left Boosty channel but has active subscription until ${user.subscriptionExpiry}. Access not revoked.`);
                     return;
                 }
