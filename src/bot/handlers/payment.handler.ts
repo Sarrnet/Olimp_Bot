@@ -54,16 +54,77 @@ export function registerPaymentHandlers(bot: Telegraf<MyContext>) {
         }
     })
 
-    // 3. Обработчик события chat_member для автоматической активации/деактивации
+    // 3. Tribute — промежуточный шаг с предупреждением (как у Boosty)
+    bot.action(/^pay:tribute$/, async (ctx) => {
+        try {
+            await ctx.answerCbQuery().catch(() => {})
+
+            const warningMessage =
+                '⚠️ <b>ОЧЕНЬ ВАЖНО!!!</b>\n\n' +
+                'Оплачивайте подписку через браузерную версию, приложение на айфон часто увеличивает цену в несколько раз.\n\n' +
+                'Выдача происходит автоматически.'
+
+            await ctx.reply(warningMessage, {
+                parse_mode: 'HTML',
+                ...Markup.inlineKeyboard([
+                    [Markup.button.callback('Понятно, перейти к оплате', 'pay:tribute:confirm')],
+                ]),
+            })
+        } catch (error) {
+            logger.error('Error in pay:tribute warning action:', error)
+            await ctx.reply('Извините, произошла ошибка.')
+        }
+    })
+
+    // 4. Tribute — подтверждение и выдача ссылки
+    bot.action('pay:tribute:confirm', async (ctx) => {
+        try {
+            await ctx.answerCbQuery().catch(() => {})
+
+            const tributeUrl = process.env.TRIBUTE_URL
+            if (!tributeUrl) {
+                await ctx.reply('Извините, оплата через Tribute сейчас недоступна.')
+                return
+            }
+
+            const message =
+                '💳 <b>Оплата через Tribute</b>\n\n' +
+                '1. Перейдите по кнопке ниже и оформите подписку (принимаются карты большинства стран мира).\n\n' +
+                '2. После оплаты Tribute добавит вас в наш закрытый VIP-канал.\n\n' +
+                '3. <b>Как только вы вступите в канал, этот бот автоматически активирует ваш полный доступ!</b>'
+
+            await ctx.reply(message, {
+                parse_mode: 'HTML',
+                ...Markup.inlineKeyboard([[Markup.button.url('Перейти к оплате Tribute', tributeUrl)]]),
+            })
+        } catch (error) {
+            logger.error('Error in pay:tribute:confirm action:', error)
+            await ctx.reply('Извините, произошла ошибка при подготовке ссылки на Tribute.')
+        }
+    })
+
+    // 5. Обработчик события chat_member для автоматической активации/деактивации
     bot.on('chat_member', async (ctx) => {
         try {
             const chatMember = ctx.chatMember;
             const boostyChannelId = process.env.BOOSTY_CHANNEL_ID;
+            const tributeChannelId = process.env.TRIBUTE_CHANNEL_ID;
 
-            // Проверяем, что событие пришло именно из канала Boosty
-            if (!boostyChannelId || String(ctx.chat.id) !== String(boostyChannelId)) {
+            // Определяем, из какого закрытого канала пришло событие
+            const incomingChatId = String(ctx.chat.id);
+            let provider: 'boosty' | 'tribute' | null = null;
+            if (boostyChannelId && incomingChatId === String(boostyChannelId)) {
+                provider = 'boosty';
+            } else if (tributeChannelId && incomingChatId === String(tributeChannelId)) {
+                provider = 'tribute';
+            }
+
+            // Событие пришло из постороннего чата — игнорируем
+            if (!provider) {
                 return;
             }
+
+            const providerLabel = provider === 'tribute' ? 'Tribute' : 'Boosty';
 
             const userId = chatMember.new_chat_member.user.id;
             const newStatus = chatMember.new_chat_member.status;
@@ -75,17 +136,17 @@ export function registerPaymentHandlers(bot: Telegraf<MyContext>) {
                 // и вступить в канал ещё до запуска /start (записи в БД может не быть).
                 await prisma.user.upsert({
                     where: { telegramId },
-                    update: { paid: true, paymentDate: new Date(), lastPaymentProvider: 'boosty' },
-                    create: { telegramId, paid: true, paymentDate: new Date(), lastPaymentProvider: 'boosty' }
+                    update: { paid: true, paymentDate: new Date(), lastPaymentProvider: provider },
+                    create: { telegramId, paid: true, paymentDate: new Date(), lastPaymentProvider: provider }
                 });
 
                 await ctx.telegram.sendMessage(userId,
-                    "🎉 <b>Оплата через Boosty подтверждена!</b>\n\n" +
+                    `🎉 <b>Оплата через ${providerLabel} подтверждена!</b>\n\n` +
                     "Полный доступ к боту и индивидуальной программе тренировок активирован.",
                     { parse_mode: 'HTML' }
                 ).catch(err => logger.error(`Failed to send success message to user ${userId}:`, err));
 
-                logger.info(`Access GRANTED to user ${userId} via Boosty channel membership.`);
+                logger.info(`Access GRANTED to user ${userId} via ${providerLabel} channel membership.`);
             }
             else if (newStatus === 'left' || newStatus === 'kicked') {
                 // ПОЛЬЗОВАТЕЛЬ ВЫШЕЛ (ОТПИСАЛСЯ)
@@ -97,7 +158,7 @@ export function registerPaymentHandlers(bot: Telegraf<MyContext>) {
                     return;
                 }
                 if (user.subscriptionExpiry && user.subscriptionExpiry > new Date()) {
-                    logger.info(`User ${userId} left Boosty channel but has active subscription until ${user.subscriptionExpiry}. Access not revoked.`);
+                    logger.info(`User ${userId} left ${providerLabel} channel but has active subscription until ${user.subscriptionExpiry}. Access not revoked.`);
                     return;
                 }
 
@@ -107,15 +168,15 @@ export function registerPaymentHandlers(bot: Telegraf<MyContext>) {
                 });
 
                 await ctx.telegram.sendMessage(userId,
-                    "💔 <b>Подписка Boosty завершена</b>\n\n" +
+                    `💔 <b>Подписка ${providerLabel} завершена</b>\n\n` +
                     "Вы покинули закрытый канал, поэтому доступ к премиум-функциям бота приостановлен. Вы всегда можете вернуться!",
                     { parse_mode: 'HTML' }
                 ).catch(err => logger.error(`Failed to send loss message to user ${userId}:`, err));
 
-                logger.info(`Access REVOKED for user ${userId} (left Boosty channel).`);
+                logger.info(`Access REVOKED for user ${userId} (left ${providerLabel} channel).`);
             }
         } catch (error) {
-            logger.error('Error in Boosty chat_member observer:', error);
+            logger.error('Error in channel-membership chat_member observer:', error);
         }
     });
 }

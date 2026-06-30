@@ -216,6 +216,13 @@ async function triggerInvoiceMenu(ctx: MyContext, days: number = 30) {
         Markup.button.callback(`🌍 Boosty (оплата из большинства стран мира)`, `pay:boosty`),
     ])
 
+    // 1b. Tribute (Observer Bot Pattern, как Boosty) — показываем только если задана ссылка
+    if (process.env.TRIBUTE_URL) {
+        buttons.push([
+            Markup.button.callback(`💳 Tribute (карты всего мира)`, `pay:tribute`),
+        ])
+    }
+
     // 2. Crypto Pay
     const cryptoProvider = PAYMENT_PROVIDERS['crypto_pay']
     if (cryptoProvider && cryptoProvider.token) {
