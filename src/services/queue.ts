@@ -73,6 +73,13 @@ export async function sendBroadcastItem(
         default:
             throw new Error(`Unsupported broadcast kind: ${(payload as BroadcastPayload).kind}`)
     }
+
+    // For media broadcasts, a long text can be attached as a separate message
+    // (sent right after the file) so it is not constrained by the 1024-char
+    // caption limit.
+    if (payload.kind !== 'text' && payload.followupText) {
+        await telegram.sendMessage(chatId, payload.followupText, { parse_mode: 'HTML' })
+    }
 }
 
 export function setupQueues(telegram: Telegram) {

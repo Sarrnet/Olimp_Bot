@@ -178,6 +178,13 @@ const broadcastConfirmKeyboard = Markup.inlineKeyboard([
     ],
 ])
 
+const broadcastFollowupKeyboard = Markup.inlineKeyboard([
+    [
+        { ...Markup.button.callback('📄 Отправить только файл', 'broadcast:skip_followup') },
+        { ...Markup.button.callback('❌ Отмена', 'broadcast:cancel') },
+    ],
+])
+
 /**
  * Extracts a broadcast payload from whatever the admin sent (text or media).
  * Media is captured by Telegram `file_id`, so it is uploaded to Telegram only
@@ -225,26 +232,71 @@ export async function handleAdminBroadcast(ctx: MyContext) {
 
 /**
  * Consumes the next message from an admin who is composing a broadcast.
- * Returns true if the message was handled (admin is in the compose step).
+ * Returns true if the message was handled (admin is mid-compose).
+ *
+ * Compose steps:
+ *  - await_content:  first message — text or media.
+ *  - await_followup: media without a caption was sent; an optional long text
+ *                    message can now be attached (sent after the file).
  */
 export async function captureBroadcastContent(ctx: MyContext): Promise<boolean> {
     const lang = ctx.language || 'ru'
     if (!isAdmin(ctx)) return false
     const state = ctx.session.broadcastState
-    if (!state || state.step !== 'await_content') return false
+    if (!state) return false
 
     // Let bot commands (e.g. /cancel, /menu) pass through instead of being
     // captured as broadcast content.
     const m: any = ctx.message
     if (m && 'text' in m && m.text.startsWith('/')) return false
 
-    const payload = extractBroadcastPayload(ctx)
-    if (!payload) {
-        await ctx.reply(i18n.t(lang, 'admin.broadcast_unsupported'))
+    if (state.step === 'await_content') {
+        const payload = extractBroadcastPayload(ctx)
+        if (!payload) {
+            await ctx.reply(i18n.t(lang, 'admin.broadcast_unsupported'))
+            return true
+        }
+        // Media without a caption: offer to attach a separate text message,
+        // which lifts the 1024-char caption limit for long texts.
+        if (payload.kind !== 'text' && !payload.caption) {
+            ctx.session.broadcastState = { step: 'await_followup', payload }
+            await ctx.reply(i18n.t(lang, 'admin.broadcast_followup_prompt'), {
+                parse_mode: 'HTML',
+                ...broadcastFollowupKeyboard,
+            })
+            return true
+        }
+        await presentBroadcastPreview(ctx, payload)
         return true
     }
-    await presentBroadcastPreview(ctx, payload)
-    return true
+
+    if (state.step === 'await_followup') {
+        if (!state.payload) {
+            delete ctx.session.broadcastState
+            return false
+        }
+        if (!m || !('text' in m)) {
+            await ctx.reply(i18n.t(lang, 'admin.broadcast_followup_need_text'))
+            return true
+        }
+        await presentBroadcastPreview(ctx, { ...state.payload, followupText: m.text })
+        return true
+    }
+
+    return false
+}
+
+/** "Send file only" button on the follow-up step — skips the attached text. */
+export async function handleBroadcastSkipFollowup(ctx: MyContext) {
+    const lang = ctx.language || 'ru'
+    if (!isAdmin(ctx)) return
+    await ctx.answerCbQuery().catch(() => {})
+
+    const state = ctx.session.broadcastState
+    if (!state || state.step !== 'await_followup' || !state.payload) {
+        return ctx.reply(i18n.t(lang, 'admin.broadcast_expired'))
+    }
+    await presentBroadcastPreview(ctx, state.payload)
 }
 
 /** Stores the payload, shows it back to the admin and asks for confirmation. */

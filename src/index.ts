@@ -36,6 +36,7 @@ import {
     captureBroadcastContent,
     handleBroadcastConfirm,
     handleBroadcastCancel,
+    handleBroadcastSkipFollowup,
     handleAdminExportUser,
     handleAdminGrant,
     handleAdminABStats,
@@ -706,6 +707,7 @@ bot.action('admin:ab:create', async (ctx) => {
 // Broadcast confirmation
 bot.action('broadcast:confirm', handleBroadcastConfirm)
 bot.action('broadcast:cancel', handleBroadcastCancel)
+bot.action('broadcast:skip_followup', handleBroadcastSkipFollowup)
 
 // Generic message handler for admin inputs and other text
 bot.on('text', async (ctx, next) => {
