@@ -3,6 +3,7 @@ import { redis } from './redis.js'
 import { trainingDeliveryService } from './training-delivery.js'
 import { logger } from '../utils/logger.js'
 import { Telegram } from 'telegraf'
+import type { BroadcastPayload } from '../bot/context.js'
 
 const TRAINING_QUEUE_NAME = 'training-delivery'
 const BROADCAST_QUEUE_NAME = 'admin-broadcast'
@@ -27,6 +28,53 @@ export const broadcastQueue = new Queue(BROADCAST_QUEUE_NAME, {
     defaultJobOptions: defaultOptions,
 })
 
+/**
+ * Sends one broadcast item to a single recipient, dispatching by content kind.
+ * Media is delivered by `fileId` (already uploaded to Telegram), so nothing is
+ * re-uploaded per recipient. Video notes and stickers ignore captions because
+ * Telegram does not support them for those types.
+ */
+export async function sendBroadcastItem(
+    telegram: Telegram,
+    chatId: number,
+    payload: BroadcastPayload,
+) {
+    const caption = payload.caption
+    const captionOpts = caption ? { caption, parse_mode: 'HTML' as const } : undefined
+
+    switch (payload.kind) {
+        case 'text':
+            await telegram.sendMessage(chatId, payload.text || '', { parse_mode: 'HTML' })
+            break
+        case 'photo':
+            await telegram.sendPhoto(chatId, payload.fileId!, captionOpts)
+            break
+        case 'video':
+            await telegram.sendVideo(chatId, payload.fileId!, captionOpts)
+            break
+        case 'document':
+            await telegram.sendDocument(chatId, payload.fileId!, captionOpts)
+            break
+        case 'voice':
+            await telegram.sendVoice(chatId, payload.fileId!, captionOpts)
+            break
+        case 'audio':
+            await telegram.sendAudio(chatId, payload.fileId!, captionOpts)
+            break
+        case 'animation':
+            await telegram.sendAnimation(chatId, payload.fileId!, captionOpts)
+            break
+        case 'video_note':
+            await telegram.sendVideoNote(chatId, payload.fileId!)
+            break
+        case 'sticker':
+            await telegram.sendSticker(chatId, payload.fileId!)
+            break
+        default:
+            throw new Error(`Unsupported broadcast kind: ${(payload as BroadcastPayload).kind}`)
+    }
+}
+
 export function setupQueues(telegram: Telegram) {
     // 1. Training Worker
     const trainingWorker = new Worker(
@@ -42,13 +90,23 @@ export function setupQueues(telegram: Telegram) {
     const broadcastWorker = new Worker(
         BROADCAST_QUEUE_NAME,
         async (job: Job) => {
-            const { telegramId, message } = job.data
+            const { telegramId } = job.data
+            // Backward compatible: legacy jobs carried a plain `message` string.
+            const payload: BroadcastPayload = job.data.payload || {
+                kind: 'text',
+                text: job.data.message,
+            }
             try {
-                await telegram.sendMessage(Number(telegramId), message, { parse_mode: 'HTML' })
+                await sendBroadcastItem(telegram, Number(telegramId), payload)
             } catch (error: any) {
-                if (error.description?.includes('bot was blocked')) {
-                    logger.info(`User ${telegramId} blocked the bot. Skipping broadcast.`)
-                    return // Don't retry if blocked
+                const desc: string = error.description || error.message || ''
+                if (
+                    desc.includes('bot was blocked') ||
+                    desc.includes('user is deactivated') ||
+                    desc.includes('chat not found')
+                ) {
+                    logger.info(`User ${telegramId} unreachable (${desc}). Skipping broadcast.`)
+                    return // Don't retry if the user can no longer be reached
                 }
                 throw error // Let BullMQ retry for other errors (network, 429, 5xx)
             }

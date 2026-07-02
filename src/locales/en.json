@@ -83,6 +83,14 @@
     },
     "admin": {
         "no_access": "You do not have access to this command.",
-        "stats_title": "📊 <b>Bot Stats</b>\n\n👥 Total users: {totalUsers}\n✅ Completed onboarding: {completedOnboarding}\n💳 Paid users: {paidUsers}\n🏋️ Total training sessions: {totalSessions}"
+        "stats_title": "📊 <b>Bot Stats</b>\n\n👥 Total users: {totalUsers}\n✅ Completed onboarding: {completedOnboarding}\n💳 Paid users: {paidUsers}\n🏋️ Total training sessions: {totalSessions}",
+        "broadcast_prompt": "📢 Send the broadcast content in a single message: text, photo, video, video note, document, voice or sticker. Nothing needs to be uploaded in advance — just send it here. To cancel: /cancel",
+        "broadcast_unsupported": "Could not recognize this message type. Send text, a photo, video, video note, document, voice or sticker.",
+        "broadcast_confirm": "⬆️ This is how the broadcast will look.\n\nSend it to <b>{count}</b> users?",
+        "broadcast_expired": "Nothing to broadcast. Start again: /broadcast",
+        "broadcast_cancelled": "❌ Broadcast cancelled.",
+        "broadcast_start": "Starting mass broadcast via the queue (BullMQ)...",
+        "broadcast_success": "Broadcast jobs created for {count} users.",
+        "broadcast_error": "Error while queuing the broadcast."
     }
 }

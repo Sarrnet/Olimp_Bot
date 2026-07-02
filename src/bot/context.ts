@@ -5,6 +5,29 @@ export interface MyWizardSession extends Scenes.WizardSessionData {
     answers: Record<string, string | number>
 }
 
+/**
+ * A single unit of content to broadcast. Text is sent as an HTML message;
+ * media kinds carry a Telegram `fileId` (already uploaded to Telegram once,
+ * then reused across all recipients — no per-user upload).
+ */
+export type BroadcastKind =
+    | 'text'
+    | 'photo'
+    | 'video'
+    | 'video_note'
+    | 'document'
+    | 'voice'
+    | 'audio'
+    | 'animation'
+    | 'sticker'
+
+export interface BroadcastPayload {
+    kind: BroadcastKind
+    text?: string
+    fileId?: string
+    caption?: string
+}
+
 export interface MySession extends Scenes.WizardSession<MyWizardSession> {
     trainingSession?: {
         currentExerciseIndex: number
@@ -15,6 +38,10 @@ export interface MySession extends Scenes.WizardSession<MyWizardSession> {
         type: 'wait_price' | 'wait_group_name' | 'wait_group_price' | 'wait_group_param_value'
         groupName?: string
         param?: string
+    }
+    broadcastState?: {
+        step: 'await_content' | 'await_confirm'
+        payload?: BroadcastPayload
     }
     healthState?: {
         type: 'wait_water' | 'wait_sleep' | 'wait_weight'

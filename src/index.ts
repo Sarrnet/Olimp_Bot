@@ -33,6 +33,9 @@ import { cryptoPayService } from './services/cryptopay.js'
 import {
     handleAdminStats,
     handleAdminBroadcast,
+    captureBroadcastContent,
+    handleBroadcastConfirm,
+    handleBroadcastCancel,
     handleAdminExportUser,
     handleAdminGrant,
     handleAdminABStats,
@@ -600,6 +603,16 @@ bot.action('main:analysis', async (ctx) => {
 
 bot.command('export', handleExport)
 
+// Clears any pending multi-step flow (broadcast, admin input, health input, scene)
+bot.command('cancel', async (ctx) => {
+    const lang = ctx.language || 'ru'
+    delete ctx.session.broadcastState
+    delete ctx.session.adminState
+    delete ctx.session.healthState
+    if (ctx.scene?.current) await ctx.scene.leave().catch(() => {})
+    await ctx.reply(i18n.t(lang, 'buttons.back_to_menu'), getMainKeyboard(lang))
+})
+
 // Admin commands
 bot.command('admin', async (ctx) => {
     if (!isAdmin(ctx)) return
@@ -612,6 +625,18 @@ bot.command('broadcast', handleAdminBroadcast)
 bot.command('export_user', handleAdminExportUser)
 bot.command('admin_grant', handleAdminGrant)
 bot.command('ab_stats', handleAdminABStats)
+
+// Capture media (photo/video/circle/document/…) sent by an admin who is
+// composing a broadcast. Must run before the video_note debug helper below so
+// that a circle sent during a broadcast is captured instead of echoed.
+bot.on(
+    ['photo', 'video', 'video_note', 'document', 'voice', 'audio', 'animation', 'sticker'],
+    async (ctx, next) => {
+        const handled = await captureBroadcastContent(ctx)
+        if (handled) return
+        return next()
+    },
+)
 
 // ВРЕМЕННЫЙ хендлер: помогает получить file_id отправленного кружка (video note),
 // чтобы прописать его в ANALYSIS_CIRCLE_FILE_ID. Отвечает только админам.
@@ -626,12 +651,9 @@ bot.on('video_note', async (ctx) => {
     )
 })
 
-bot.hears([/📊 Статистика/, /📊 Statistics/], handleAdminStats)
+bot.hears([/📊 (Общая статистика|Статистика)/, /📊 Statistics/], handleAdminStats)
 bot.hears([/🏷 A\/B Тесты/, /🏷 A\/B Tests/], handleAdminABList)
-bot.hears([/📢 Рассылка/, /📢 Broadcast/], (ctx) => {
-    if (!isAdmin(ctx)) return
-    ctx.reply('/broadcast Текст сообщения')
-})
+bot.hears([/📢 (Массовая рассылка|Рассылка)/, /📢 Broadcast/], handleAdminBroadcast)
 bot.hears([/📥 Экспорт/, /📥 Export/], (ctx) => {
     if (!isAdmin(ctx)) return
     ctx.reply('/export_user <telegramId>')
@@ -681,6 +703,10 @@ bot.action('admin:ab:create', async (ctx) => {
     await handleAdminABAskNewGroup(ctx)
 })
 
+// Broadcast confirmation
+bot.action('broadcast:confirm', handleBroadcastConfirm)
+bot.action('broadcast:cancel', handleBroadcastCancel)
+
 // Generic message handler for admin inputs and other text
 bot.on('text', async (ctx, next) => {
     const text = ctx.message.text
@@ -688,6 +714,10 @@ bot.on('text', async (ctx, next) => {
     // Check if it's an admin input
     const adminHandled = await handleAdminMessage(ctx, text)
     if (adminHandled) return
+
+    // Check if it's broadcast content being composed by an admin
+    const broadcastHandled = await captureBroadcastContent(ctx)
+    if (broadcastHandled) return
 
     // Check if it's a health input
     const healthHandled = await processHealthInput(ctx, text)
