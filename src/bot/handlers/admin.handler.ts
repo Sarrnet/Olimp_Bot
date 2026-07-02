@@ -1,8 +1,8 @@
 import { Markup } from 'telegraf'
-import { MyContext } from '../context.js'
+import { MyContext, BroadcastPayload } from '../context.js'
 import { prisma } from '../../db/prisma.js'
 import { logger } from '../../utils/logger.js'
-import { broadcastQueue } from '../../services/queue.js'
+import { broadcastQueue, sendBroadcastItem } from '../../services/queue.js'
 import { i18n } from '../../services/i18n.js'
 import { abService } from '../../services/ab.service.js'
 import {
@@ -167,16 +167,131 @@ export async function handleAdminMessage(ctx: MyContext, text: string) {
 
 // --- Rest of Existing Handlers ---
 
+// Delay between consecutive broadcast messages (ms). Spreads load to stay
+// under Telegram's ~30 msg/sec limit. Configurable via env; 200ms => 5 msg/sec.
+const BROADCAST_PACING_MS = Math.max(0, parseInt(process.env.BROADCAST_PACING_MS || '200', 10))
+
+const broadcastConfirmKeyboard = Markup.inlineKeyboard([
+    [
+        { ...Markup.button.callback('✅ Отправить всем', 'broadcast:confirm') },
+        { ...Markup.button.callback('❌ Отмена', 'broadcast:cancel') },
+    ],
+])
+
+/**
+ * Extracts a broadcast payload from whatever the admin sent (text or media).
+ * Media is captured by Telegram `file_id`, so it is uploaded to Telegram only
+ * once and then reused for every recipient.
+ */
+function extractBroadcastPayload(ctx: MyContext): BroadcastPayload | null {
+    const m: any = ctx.message
+    if (!m) return null
+    const caption: string | undefined = m.caption
+    if ('text' in m) return { kind: 'text', text: m.text }
+    if ('photo' in m)
+        // photo is an array of sizes; last entry is the highest resolution
+        return { kind: 'photo', fileId: m.photo[m.photo.length - 1].file_id, caption }
+    if ('animation' in m) return { kind: 'animation', fileId: m.animation.file_id, caption }
+    if ('video' in m) return { kind: 'video', fileId: m.video.file_id, caption }
+    if ('video_note' in m) return { kind: 'video_note', fileId: m.video_note.file_id }
+    if ('voice' in m) return { kind: 'voice', fileId: m.voice.file_id, caption }
+    if ('audio' in m) return { kind: 'audio', fileId: m.audio.file_id, caption }
+    if ('document' in m) return { kind: 'document', fileId: m.document.file_id, caption }
+    if ('sticker' in m) return { kind: 'sticker', fileId: m.sticker.file_id }
+    return null
+}
+
+/**
+ * Entry point for /broadcast. If text follows the command it is treated as the
+ * content right away; otherwise the admin is asked to send the content (text,
+ * photo, video, video note, document, etc.) which is then previewed.
+ */
 export async function handleAdminBroadcast(ctx: MyContext) {
     const lang = ctx.language || 'ru'
     if (!isAdmin(ctx)) return
 
-    const message =
+    const inlineText =
         ctx.message && 'text' in ctx.message
             ? ctx.message.text.replace('/broadcast', '').trim()
             : ''
-    if (!message) return ctx.reply(i18n.t(lang, 'admin.broadcast_usage'))
 
+    if (inlineText) {
+        return presentBroadcastPreview(ctx, { kind: 'text', text: inlineText })
+    }
+
+    ctx.session.broadcastState = { step: 'await_content' }
+    await ctx.reply(i18n.t(lang, 'admin.broadcast_prompt'))
+}
+
+/**
+ * Consumes the next message from an admin who is composing a broadcast.
+ * Returns true if the message was handled (admin is in the compose step).
+ */
+export async function captureBroadcastContent(ctx: MyContext): Promise<boolean> {
+    const lang = ctx.language || 'ru'
+    if (!isAdmin(ctx)) return false
+    const state = ctx.session.broadcastState
+    if (!state || state.step !== 'await_content') return false
+
+    // Let bot commands (e.g. /cancel, /menu) pass through instead of being
+    // captured as broadcast content.
+    const m: any = ctx.message
+    if (m && 'text' in m && m.text.startsWith('/')) return false
+
+    const payload = extractBroadcastPayload(ctx)
+    if (!payload) {
+        await ctx.reply(i18n.t(lang, 'admin.broadcast_unsupported'))
+        return true
+    }
+    await presentBroadcastPreview(ctx, payload)
+    return true
+}
+
+/** Stores the payload, shows it back to the admin and asks for confirmation. */
+async function presentBroadcastPreview(ctx: MyContext, payload: BroadcastPayload) {
+    const lang = ctx.language || 'ru'
+    ctx.session.broadcastState = { step: 'await_confirm', payload }
+
+    const total = await prisma.user.count()
+
+    // Show a real preview by delivering the item to the admin themselves.
+    try {
+        if (ctx.from) await sendBroadcastItem(ctx.telegram, ctx.from.id, payload)
+    } catch (error) {
+        logger.error('Error previewing broadcast:', error)
+    }
+
+    await ctx.reply(i18n.t(lang, 'admin.broadcast_confirm', { count: total }), {
+        parse_mode: 'HTML',
+        ...broadcastConfirmKeyboard,
+    })
+}
+
+export async function handleBroadcastConfirm(ctx: MyContext) {
+    const lang = ctx.language || 'ru'
+    if (!isAdmin(ctx)) return
+    await ctx.answerCbQuery().catch(() => {})
+
+    const state = ctx.session.broadcastState
+    if (!state || state.step !== 'await_confirm' || !state.payload) {
+        return ctx.reply(i18n.t(lang, 'admin.broadcast_expired'))
+    }
+    const payload = state.payload
+    delete ctx.session.broadcastState
+    await enqueueBroadcast(ctx, payload)
+}
+
+export async function handleBroadcastCancel(ctx: MyContext) {
+    const lang = ctx.language || 'ru'
+    if (!isAdmin(ctx)) return
+    await ctx.answerCbQuery().catch(() => {})
+    delete ctx.session.broadcastState
+    await ctx.reply(i18n.t(lang, 'admin.broadcast_cancelled'))
+}
+
+/** Fans the payload out to every user via the broadcast queue, paced by delay. */
+async function enqueueBroadcast(ctx: MyContext, payload: BroadcastPayload) {
+    const lang = ctx.language || 'ru'
     try {
         let cursor: string | undefined = undefined
         const batchSize = 100
@@ -193,17 +308,21 @@ export async function handleAdminBroadcast(ctx: MyContext) {
             })
             if (users.length === 0) break
             for (const u of users) {
-                await broadcastQueue.add(`broadcast-${u.telegramId}-${Date.now()}`, {
-                    telegramId: u.telegramId.toString(),
-                    message: message,
-                })
+                await broadcastQueue.add(
+                    `broadcast-${u.telegramId}-${Date.now()}`,
+                    {
+                        telegramId: u.telegramId.toString(),
+                        payload,
+                    },
+                    { delay: count * BROADCAST_PACING_MS },
+                )
                 count++
             }
             cursor = users[users.length - 1].id
         }
         await ctx.reply(i18n.t(lang, 'admin.broadcast_success', { count }))
     } catch (error) {
-        logger.error('Error in handleAdminBroadcast:', error)
+        logger.error('Error in enqueueBroadcast:', error)
         await ctx.reply(i18n.t(lang, 'admin.broadcast_error'))
     }
 }
