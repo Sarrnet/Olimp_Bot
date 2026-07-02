@@ -25,7 +25,11 @@ export interface BroadcastPayload {
     kind: BroadcastKind
     text?: string
     fileId?: string
+    // Short caption attached to the media itself (Telegram limit: 1024 chars).
     caption?: string
+    // Optional text message sent as a separate message right after the media.
+    // Used for long texts that do not fit into a caption (limit: 4096 chars).
+    followupText?: string
 }
 
 export interface MySession extends Scenes.WizardSession<MyWizardSession> {
@@ -40,7 +44,7 @@ export interface MySession extends Scenes.WizardSession<MyWizardSession> {
         param?: string
     }
     broadcastState?: {
-        step: 'await_content' | 'await_confirm'
+        step: 'await_content' | 'await_followup' | 'await_confirm'
         payload?: BroadcastPayload
     }
     healthState?: {
