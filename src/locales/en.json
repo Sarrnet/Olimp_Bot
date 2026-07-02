@@ -92,7 +92,8 @@
         "broadcast_expired": "Nothing to broadcast. Start again: /broadcast",
         "broadcast_cancelled": "❌ Broadcast cancelled.",
         "broadcast_start": "Starting mass broadcast via the queue (BullMQ)...",
-        "broadcast_success": "Broadcast jobs created for {count} users.",
+        "broadcast_success": "Broadcast jobs created for {count} users. A final report will arrive once sending completes.",
+        "broadcast_report": "📢 <b>Broadcast finished</b>\n\n👥 Recipients total: {total}\n✅ Delivered: {sent}\n🚫 Blocked the bot: {blocked}\n⚠️ Send errors: {failed}\n\n<i>\"Delivered\" = active users without a block.</i>",
         "broadcast_error": "Error while queuing the broadcast."
     }
 }

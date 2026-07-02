@@ -2,6 +2,7 @@ import { Queue, Worker, Job } from 'bullmq'
 import { redis } from './redis.js'
 import { trainingDeliveryService } from './training-delivery.js'
 import { logger } from '../utils/logger.js'
+import { i18n } from './i18n.js'
 import { Telegram } from 'telegraf'
 import type { BroadcastPayload } from '../bot/context.js'
 
@@ -82,6 +83,92 @@ export async function sendBroadcastItem(
     }
 }
 
+// --- Broadcast delivery stats (per-broadcast counters in Redis) ---
+
+type BroadcastOutcome = 'sent' | 'blocked' | 'failed'
+
+const statsKey = (broadcastId: string) => `broadcast:stats:${broadcastId}`
+const reportedKey = (broadcastId: string) => `broadcast:reported:${broadcastId}`
+const STATS_TTL_SECONDS = 24 * 60 * 60
+
+/** Initializes counters/meta for a broadcast before its jobs are enqueued. */
+export async function initBroadcastStats(broadcastId: string, chatId: number, lang: string) {
+    try {
+        const key = statsKey(broadcastId)
+        await redis.hset(key, { chatId: String(chatId), lang, sent: 0, blocked: 0, failed: 0 })
+        await redis.expire(key, STATS_TTL_SECONDS)
+    } catch (error) {
+        logger.error('Error initializing broadcast stats:', error)
+    }
+}
+
+/**
+ * Sets the final recipient total (denominator) once all jobs are enqueued, then
+ * checks whether the broadcast is already complete (covers tiny broadcasts).
+ */
+export async function finalizeBroadcastTotal(
+    telegram: Telegram,
+    broadcastId: string,
+    total: number,
+) {
+    try {
+        await redis.hset(statsKey(broadcastId), 'total', total)
+        await maybeReportBroadcast(telegram, broadcastId)
+    } catch (error) {
+        logger.error('Error finalizing broadcast total:', error)
+    }
+}
+
+/** Records one terminal outcome and reports the summary if the batch is done. */
+async function recordBroadcastOutcome(
+    telegram: Telegram,
+    broadcastId: string | undefined,
+    outcome: BroadcastOutcome,
+) {
+    if (!broadcastId) return // legacy jobs without a broadcastId are not tracked
+    try {
+        await redis.hincrby(statsKey(broadcastId), outcome, 1)
+        await maybeReportBroadcast(telegram, broadcastId)
+    } catch (error) {
+        // Stats must never break delivery — swallow everything.
+        logger.error('Error recording broadcast outcome:', error)
+    }
+}
+
+/** Sends the admin a one-time summary once sent+blocked+failed reaches total. */
+async function maybeReportBroadcast(telegram: Telegram, broadcastId: string) {
+    const data = await redis.hgetall(statsKey(broadcastId))
+    if (!data || data.total === undefined) return // total not set yet → not finished
+
+    const total = parseInt(data.total, 10)
+    const sent = parseInt(data.sent || '0', 10)
+    const blocked = parseInt(data.blocked || '0', 10)
+    const failed = parseInt(data.failed || '0', 10)
+    if (sent + blocked + failed < total) return // still in progress
+
+    // Ensure the summary is sent exactly once, even with 5 parallel workers.
+    const reserved = await redis.set(reportedKey(broadcastId), '1', 'EX', STATS_TTL_SECONDS, 'NX')
+    if (reserved !== 'OK') return
+
+    const chatId = parseInt(data.chatId || '0', 10)
+    const lang = data.lang || 'ru'
+    if (chatId) {
+        try {
+            await telegram.sendMessage(
+                chatId,
+                i18n.t(lang, 'admin.broadcast_report', { total, sent, blocked, failed }),
+                { parse_mode: 'HTML' },
+            )
+        } catch (error) {
+            logger.error('Error sending broadcast report:', error)
+        }
+    }
+    await redis.del(statsKey(broadcastId))
+    logger.info(
+        `Broadcast ${broadcastId} finished: total=${total} sent=${sent} blocked=${blocked} failed=${failed}`,
+    )
+}
+
 export function setupQueues(telegram: Telegram) {
     // 1. Training Worker
     const trainingWorker = new Worker(
@@ -97,7 +184,7 @@ export function setupQueues(telegram: Telegram) {
     const broadcastWorker = new Worker(
         BROADCAST_QUEUE_NAME,
         async (job: Job) => {
-            const { telegramId } = job.data
+            const { telegramId, broadcastId } = job.data
             // Backward compatible: legacy jobs carried a plain `message` string.
             const payload: BroadcastPayload = job.data.payload || {
                 kind: 'text',
@@ -105,6 +192,7 @@ export function setupQueues(telegram: Telegram) {
             }
             try {
                 await sendBroadcastItem(telegram, Number(telegramId), payload)
+                await recordBroadcastOutcome(telegram, broadcastId, 'sent')
             } catch (error: any) {
                 const desc: string = error.description || error.message || ''
                 if (
@@ -113,6 +201,7 @@ export function setupQueues(telegram: Telegram) {
                     desc.includes('chat not found')
                 ) {
                     logger.info(`User ${telegramId} unreachable (${desc}). Skipping broadcast.`)
+                    await recordBroadcastOutcome(telegram, broadcastId, 'blocked')
                     return // Don't retry if the user can no longer be reached
                 }
                 throw error // Let BullMQ retry for other errors (network, 429, 5xx)
@@ -129,6 +218,13 @@ export function setupQueues(telegram: Telegram) {
         logger.error(
             `Broadcast job ${job?.id} failed for user ${job?.data.telegramId}: ${err.message}`,
         )
+        // Count only terminal failures (retries exhausted) toward the summary.
+        if (job) {
+            const maxAttempts = job.opts.attempts ?? 1
+            if (job.attemptsMade >= maxAttempts) {
+                void recordBroadcastOutcome(telegram, job.data.broadcastId, 'failed')
+            }
+        }
     })
 
     return { trainingWorker, broadcastWorker }

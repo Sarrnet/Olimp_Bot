@@ -2,7 +2,12 @@ import { Markup } from 'telegraf'
 import { MyContext, BroadcastPayload } from '../context.js'
 import { prisma } from '../../db/prisma.js'
 import { logger } from '../../utils/logger.js'
-import { broadcastQueue, sendBroadcastItem } from '../../services/queue.js'
+import {
+    broadcastQueue,
+    sendBroadcastItem,
+    initBroadcastStats,
+    finalizeBroadcastTotal,
+} from '../../services/queue.js'
 import { i18n } from '../../services/i18n.js'
 import { abService } from '../../services/ab.service.js'
 import {
@@ -344,11 +349,14 @@ export async function handleBroadcastCancel(ctx: MyContext) {
 /** Fans the payload out to every user via the broadcast queue, paced by delay. */
 async function enqueueBroadcast(ctx: MyContext, payload: BroadcastPayload) {
     const lang = ctx.language || 'ru'
+    // Unique id used to aggregate delivery stats for this broadcast in Redis.
+    const broadcastId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     try {
         let cursor: string | undefined = undefined
         const batchSize = 100
         let count = 0
         await ctx.reply(i18n.t(lang, 'admin.broadcast_start'))
+        await initBroadcastStats(broadcastId, ctx.from?.id || 0, lang)
 
         while (true) {
             const users: any[] = await prisma.user.findMany({
@@ -365,6 +373,7 @@ async function enqueueBroadcast(ctx: MyContext, payload: BroadcastPayload) {
                     {
                         telegramId: u.telegramId.toString(),
                         payload,
+                        broadcastId,
                     },
                     { delay: count * BROADCAST_PACING_MS },
                 )
@@ -372,6 +381,8 @@ async function enqueueBroadcast(ctx: MyContext, payload: BroadcastPayload) {
             }
             cursor = users[users.length - 1].id
         }
+        // Record the final denominator; also reports immediately if already done.
+        await finalizeBroadcastTotal(ctx.telegram, broadcastId, count)
         await ctx.reply(i18n.t(lang, 'admin.broadcast_success', { count }))
     } catch (error) {
         logger.error('Error in enqueueBroadcast:', error)
